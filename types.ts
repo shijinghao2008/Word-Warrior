@@ -18,6 +18,9 @@ export interface UserStats {
   rank: Rank;
   rankPoints: number;
   winStreak: number;
+  // Achievement specific stats
+  masteredWordsCount: number;
+  loginDays: number;
 }
 
 export interface UserProfile {

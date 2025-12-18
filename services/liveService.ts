@@ -22,51 +22,75 @@ export const decodeAudio = (base64: string) => {
   return bytes;
 };
 
-export const startLiveSession = async (
-  onScore: (score: number, feedback: string) => void,
-  systemPrompt: string = "You are a Battle Referee. Listen to the user's spoken English. Evaluate their pronunciation and grammar. Return JSON with 'score' (0-100) and 'feedback' in the text field when turn is complete."
-) => {
-  // Use process.env.API_KEY directly as per guidelines
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Resample utility for browser audio compatibility
+export const resampleAudio = (buffer: Float32Array, fromRate: number, toRate: number): Float32Array => {
+  if (fromRate === toRate) return buffer;
+  const ratio = fromRate / toRate;
+  const newLength = Math.round(buffer.length / ratio);
+  const result = new Float32Array(newLength);
+  for (let i = 0; i < newLength; i++) {
+    result[i] = buffer[Math.min(Math.floor(i * ratio), buffer.length - 1)];
+  }
+  return result;
+};
 
+export const startLiveSession = (
+  onFinalFeedback: (fullText: string) => void,
+  systemPrompt: string = "You are a Battle Referee. Evaluate user's English."
+) => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  let accumulatedText = "";
+  let sessionObj: any = null;
+
+  // Use the specific requested model
   const sessionPromise = ai.live.connect({
-    model: 'gemini-2.5-flash-native-audio-preview-09-2025',
+    model: 'gemini-2.5-flash-native-audio-preview-12-2025',
     config: {
       responseModalities: [Modality.AUDIO],
       systemInstruction: systemPrompt,
-      outputAudioTranscription: {},
+      outputAudioTranscription: {}, 
       inputAudioTranscription: {},
     },
     callbacks: {
       onopen: () => console.log('Live Session Connected'),
       onmessage: async (message: LiveServerMessage) => {
-        // Handle model turn completions and transcriptions
-        if (message.serverContent?.turnComplete) {
-           console.log("Turn complete");
-        }
+        // Collect transcription as it streams in
         if (message.serverContent?.outputTranscription) {
-            const text = message.serverContent.outputTranscription.text;
-            // Simulated scoring logic from text parsing
-            if (text.includes("Score:") || text.includes("score:")) {
-                const match = text.match(/score:?\s*(\d+)/i);
-                if (match) onScore(parseInt(match[1]), text);
-            }
+          accumulatedText += message.serverContent.outputTranscription.text;
         }
-        // Even when handling transcriptions, you must still acknowledge model turn parts
-        const base64EncodedAudioString = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
-        if (base64EncodedAudioString) {
-          // Model returned audio data
+
+        // Trigger feedback when the model finishes its turn
+        if (message.serverContent?.turnComplete) {
+          console.log("Model Turn Complete. Total text:", accumulatedText);
+          if (accumulatedText.trim()) {
+            onFinalFeedback(accumulatedText);
+            accumulatedText = ""; 
+          }
         }
       },
       onerror: (e) => console.error('Live Error', e),
-      onclose: () => console.log('Live Session Closed'),
+      onclose: () => {
+        console.log('Live Session Closed.');
+      },
     },
   });
 
-  return sessionPromise;
+  sessionPromise.then(s => { sessionObj = s; });
+
+  return {
+    sessionPromise,
+    // Expose method to send text commands (e.g., to trigger evaluation)
+    sendText: (text: string) => {
+      if (sessionObj) {
+        sessionObj.send([{ text }]);
+      }
+    },
+    close: () => {
+      if (sessionObj) sessionObj.close();
+    }
+  };
 };
 
-// Custom raw PCM decoder as browser's decodeAudioData doesn't support raw streams
 export async function decodeAudioData(
   data: Uint8Array,
   ctx: AudioContext,
