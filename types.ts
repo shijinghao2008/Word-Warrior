@@ -48,3 +48,44 @@ export interface BattleState {
   log: string[];
   isActive: boolean;
 }
+
+// Database types for Supabase
+export interface DatabaseUserProfile {
+  id: string;
+  email: string;
+  username: string;
+  is_admin: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DatabaseUserStats {
+  user_id: string;
+  level: number;
+  exp: number;
+  atk: number;
+  def: number;
+  crit: number;
+  hp: number;
+  max_hp: number;
+  rank: Rank;
+  rank_points: number;
+  win_streak: number;
+  mastered_words_count: number;
+  login_days: number;
+  updated_at: string;
+}
+
+export interface MasteredWord {
+  id: string;
+  user_id: string;
+  word: string;
+  mastered_at: string;
+}
+
+export interface Achievement {
+  id: string;
+  user_id: string;
+  achievement_id: string;
+  unlocked_at: string;
+}

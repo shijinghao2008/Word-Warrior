@@ -1,9 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sun, Moon, Zap, Trophy, Shield, User, ChevronRight, LayoutGrid, Star, Flame, Target, BookOpen, Swords, Mic2, Headphones, PenTool, ShieldCheck } from 'lucide-react';
+import { X, Sun, Moon, Zap, Trophy, Shield, User, ChevronRight, LayoutGrid, Star, Flame, Target, BookOpen, Swords, Mic2, Headphones, PenTool, ShieldCheck, LogOut } from 'lucide-react';
 import { INITIAL_STATS, NAVIGATION, TRAINING_MODES, PVP_MODES } from './constants.tsx';
 import { UserStats, Rank } from './types';
+import { getUserStats, updateUserStats, addMasteredWord } from './services/databaseService';
+import { useAuth } from './contexts/AuthContext';
+import AuthPage from './components/Auth/AuthPage';
+import LoadingScreen from './components/Auth/LoadingScreen';
 
 // Components
 import StatsPanel from './components/StatsPanel';
@@ -18,12 +22,30 @@ import Leaderboard from './components/Leaderboard';
 import AchievementsPanel from './components/AchievementsPanel';
 
 const App: React.FC = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingScreen />;
+  }
+
+  if (!user) {
+    return <AuthPage />;
+  }
+
+  return <AuthenticatedApp userId={user.id} />;
+};
+
+interface AuthenticatedAppProps {
+  userId: string;
+}
+
+const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
+  const { signOut } = useAuth();
   const [stats, setStats] = useState<UserStats>(() => {
-    const saved = localStorage.getItem('ww_stats');
-    // Merge with INITIAL_STATS to ensure new fields (like masteredWordsCount) exist if loading old data
+    const saved = localStorage.getItem(`ww_stats_${userId}`);
     return saved ? { ...INITIAL_STATS, ...JSON.parse(saved) } : INITIAL_STATS;
   });
-  
+
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     const saved = localStorage.getItem('ww_theme');
     return (saved as 'dark' | 'light') || 'dark';
@@ -32,10 +54,47 @@ const App: React.FC = () => {
   // Default to vocab as requested
   const [activeTab, setActiveTab] = useState('vocab');
   const [isArenaMenuOpen, setIsArenaMenuOpen] = useState(false);
+  const [dbLoaded, setDbLoaded] = useState(false);
 
+  // Load user stats from database on init
   useEffect(() => {
-    localStorage.setItem('ww_stats', JSON.stringify(stats));
-  }, [stats]);
+    const loadStatsFromDB = async () => {
+      try {
+        const dbStats = await getUserStats(userId);
+        if (dbStats) {
+          console.log('✅ Loaded stats from Supabase:', dbStats);
+          setStats(dbStats);
+          localStorage.setItem(`ww_stats_${userId}`, JSON.stringify(dbStats));
+        } else {
+          console.log('ℹ️ No stats in database, using local/initial stats');
+        }
+      } catch (error) {
+        console.error('❌ Error loading stats from database:', error);
+      } finally {
+        setDbLoaded(true);
+      }
+    };
+    loadStatsFromDB();
+  }, [userId]);
+
+  // Sync stats to both localStorage and database
+  useEffect(() => {
+    if (!dbLoaded) return; // Don't sync until we've loaded from DB
+
+    localStorage.setItem(`ww_stats_${userId}`, JSON.stringify(stats));
+
+    // Debounced database sync
+    const syncTimer = setTimeout(async () => {
+      try {
+        await updateUserStats(userId, stats);
+        console.log('✅ Synced stats to Supabase');
+      } catch (error) {
+        console.error('❌ Error syncing to database:', error);
+      }
+    }, 1000); // Wait 1 second after last change before syncing
+
+    return () => clearTimeout(syncTimer);
+  }, [stats, dbLoaded, userId]);
 
   useEffect(() => {
     localStorage.setItem('ww_theme', theme);
@@ -49,10 +108,10 @@ const App: React.FC = () => {
     }
   }, [theme]);
 
-  const handleGainExp = (exp: number, statType?: 'atk' | 'def' | 'crit' | 'hp') => {
+  const handleGainExp = (exp: number, statType?: 'atk' | 'def' | 'crit' | 'hp', word?: string) => {
     setStats(prev => {
       let newStats = { ...prev, exp: prev.exp + exp };
-      
+
       // Level Up Logic
       if (newStats.exp >= prev.level * 100) {
         newStats.exp -= prev.level * 100;
@@ -66,10 +125,14 @@ const App: React.FC = () => {
         if (statType === 'crit') newStats.crit += 0.005;
         else (newStats as any)[statType] += 1;
       }
-      
+
       // Track Word Mastery specifically for vocab/atk gains
-      if (statType === 'atk') {
+      if (statType === 'atk' && word) {
         newStats.masteredWordsCount = (newStats.masteredWordsCount || 0) + 1;
+        // Async database sync for mastered word (fire and forget)
+        addMasteredWord(userId, word).catch(err =>
+          console.error('Error adding mastered word to DB:', err)
+        );
       }
 
       return newStats;
@@ -107,7 +170,7 @@ const App: React.FC = () => {
             >
               {/* Glass Reflection Effect */}
               <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none" />
-              
+
               <div className="relative z-10 flex flex-col items-center gap-4">
                 <div className="p-4 rounded-2xl bg-white/20 backdrop-blur-md text-white shadow-lg transition-transform group-hover:scale-110">
                   {React.cloneElement(mode.icon as React.ReactElement, { size: 32 })}
@@ -162,12 +225,12 @@ const App: React.FC = () => {
 
       {/* 2. Achievements Section */}
       <div className="space-y-4">
-         <AchievementsPanel stats={stats} />
+        <AchievementsPanel stats={stats} />
       </div>
-      
+
       {/* 3. Settings Button */}
       <div className="pt-4 border-t dark:border-slate-800 border-slate-100">
-        <button 
+        <button
           onClick={() => setActiveTab('admin')}
           className="w-full py-4 dark:bg-slate-800 bg-slate-100 dark:text-slate-400 text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:dark:text-white transition-colors"
         >
@@ -179,7 +242,7 @@ const App: React.FC = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'vocab': return <VocabTraining onMastered={(word) => handleGainExp(5, 'atk')} />;
+      case 'vocab': return <VocabTraining onMastered={(word) => handleGainExp(5, 'atk', word)} />;
       case 'scholar': return renderScholarPath();
       case 'leaderboard': return <div className="pb-32"><Leaderboard /></div>;
       case 'profile': return renderProfile();
@@ -187,7 +250,7 @@ const App: React.FC = () => {
       case 'writing': return <div className="pb-32"><WritingTraining onSuccess={(exp) => handleGainExp(exp, 'atk')} /></div>;
       case 'listening': return <div className="pb-32"><ListeningTraining onSuccess={(exp) => handleGainExp(exp, 'def')} /></div>;
       case 'oral': return <div className="pb-32"><OralTraining playerStats={stats} onSuccess={(exp) => handleGainExp(exp, 'crit')} /></div>;
-      case 'pvp_blitz': 
+      case 'pvp_blitz':
       case 'pvp_tactics':
       case 'pvp_chant':
         return <div className="pb-32"><BattleArena mode={activeTab} playerStats={stats} onVictory={() => setActiveTab('vocab')} onDefeat={() => setActiveTab('vocab')} /></div>;
@@ -212,8 +275,15 @@ const App: React.FC = () => {
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center font-black text-white text-xs">W</div>
           <span className="rpg-font font-black tracking-widest text-xs uppercase dark:text-white text-slate-900">Word Warrior</span>
         </div>
-        <div className="flex items-center gap-4">
-          <button 
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => signOut()}
+            className="p-2 rounded-full dark:bg-slate-900 bg-slate-100 border dark:border-slate-800 border-slate-200 shadow-sm text-slate-600 dark:text-slate-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+            title="登出"
+          >
+            <LogOut size={14} />
+          </button>
+          <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className="p-2 rounded-full dark:bg-slate-900 bg-slate-100 border dark:border-slate-800 border-slate-200 shadow-sm text-slate-600 dark:text-slate-400"
           >
@@ -235,15 +305,15 @@ const App: React.FC = () => {
           >
             {/* Context Back Button for Sub-pages */}
             {['reading', 'writing', 'listening', 'oral', 'pvp_blitz', 'pvp_tactics', 'pvp_chant', 'admin'].includes(activeTab) && (
-               <button 
-                 onClick={() => {
-                   if (['reading', 'writing', 'listening', 'oral'].includes(activeTab)) setActiveTab('scholar');
-                   else setActiveTab('vocab');
-                 }} 
-                 className="mt-4 mb-2 flex items-center gap-2 text-[12px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600"
-               >
-                 <X size={12} /> 返回
-               </button>
+              <button
+                onClick={() => {
+                  if (['reading', 'writing', 'listening', 'oral'].includes(activeTab)) setActiveTab('scholar');
+                  else setActiveTab('vocab');
+                }}
+                className="mt-4 mb-2 flex items-center gap-2 text-[12px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600"
+              >
+                <X size={12} /> 返回
+              </button>
             )}
             {renderContent()}
           </motion.div>
@@ -253,12 +323,12 @@ const App: React.FC = () => {
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-[100] px-4 pb-8 pt-2 pointer-events-none">
         <div className="max-w-lg mx-auto relative pointer-events-auto">
-          
+
           {/* Arena Pop-up Menu */}
           <AnimatePresence>
             {isArenaMenuOpen && (
               <>
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -307,25 +377,23 @@ const App: React.FC = () => {
                     setIsArenaMenuOpen(false);
                   }
                 }}
-                className={`relative flex flex-col items-center justify-center transition-all flex-1 px-1 h-full ${
-                  item.special 
-                    ? '-mt-12 w-20 h-20 bg-indigo-600 rounded-full text-white border-[6px] dark:border-[#020617] border-slate-50 shadow-2xl z-20 max-w-[80px]' 
-                    : ''
-                }`}
+                className={`relative flex flex-col items-center justify-center transition-all flex-1 px-1 h-full ${item.special
+                  ? '-mt-12 w-20 h-20 bg-indigo-600 rounded-full text-white border-[6px] dark:border-[#020617] border-slate-50 shadow-2xl z-20 max-w-[80px]'
+                  : ''
+                  }`}
               >
                 <div className={`transition-all duration-300 ${!item.special && activeTab === item.id ? 'text-indigo-600 scale-110' : 'text-slate-500'}`}>
                   {item.icon}
                 </div>
-                
-                <span className={`text-[11px] font-black uppercase mt-1.5 tracking-tighter text-center whitespace-nowrap ${
-                  item.special ? 'text-white' : (activeTab === item.id ? 'text-indigo-600' : 'text-slate-400')
-                }`}>
+
+                <span className={`text-[11px] font-black uppercase mt-1.5 tracking-tighter text-center whitespace-nowrap ${item.special ? 'text-white' : (activeTab === item.id ? 'text-indigo-600' : 'text-slate-400')
+                  }`}>
                   {item.label}
                 </span>
-                
+
                 {/* Active Indicator Dot */}
                 {!item.special && activeTab === item.id && (
-                  <motion.div 
+                  <motion.div
                     layoutId="active-nav"
                     className="absolute bottom-2 w-1.5 h-1.5 bg-indigo-600 rounded-full"
                   />
