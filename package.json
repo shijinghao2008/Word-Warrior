@@ -7,8 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "server": "ts-node --project tsconfig.server.json backend/server.ts",
-    "server:dev": "nodemon --watch backend --ext ts --exec \"ts-node --project tsconfig.server.json backend/server.ts\""
+    "server": "ts-node-esm --project tsconfig.server.json backend/server.ts",
+    "server:dev": "nodemon --watch backend --ext ts --exec \"ts-node-esm --project tsconfig.server.json backend/server.ts\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.0",
