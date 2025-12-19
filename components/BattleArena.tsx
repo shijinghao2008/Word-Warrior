@@ -19,7 +19,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
   const [isShaking, setIsShaking] = useState<'player' | 'enemy' | null>(null);
   const [damageNumbers, setDamageNumbers] = useState<{ id: number, val: number, target: 'player' | 'enemy', type?: 'crit' | 'block' }[]>([]);
   const [status, setStatus] = useState('YOUR TURN');
-  
+
   // Quiz specific states
   const [currentVocabQ, setCurrentVocabQ] = useState(MOCK_VOCAB_CARDS[0]);
   const [currentGrammarQ, setCurrentGrammarQ] = useState(MOCK_GRAMMAR_QUESTIONS[0]);
@@ -42,7 +42,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
     setTimeout(() => {
       let dmg = Math.floor(Math.random() * 12 + 10);
       let type: 'crit' | 'block' | undefined;
-      
+
       // Mitigation logic for pvp_tactics where DEF matters
       if (mode === 'pvp_tactics') {
         const reduction = Math.floor(playerStats.def / 2);
@@ -100,7 +100,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       const nativeRate = audioContextRef.current.sampleRate;
-      
+
       const source = audioContextRef.current.createMediaStreamSource(stream);
       scriptProcessorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
 
@@ -110,7 +110,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
 
         let dmg = 0;
         let type: 'crit' | undefined;
-        
+
         if (score >= 90) {
           dmg = 100;
           type = 'crit';
@@ -139,13 +139,13 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
         const int16 = new Int16Array(l);
         for (let i = 0; i < l; i++) int16[i] = resampled[i] * 32768;
         const pcmBlob = { data: encodeAudio(new Uint8Array(int16.buffer)), mimeType: 'audio/pcm;rate=16000' };
-        
+
         sessionHandles.sessionPromise.then((session: any) => session.sendRealtimeInput({ media: pcmBlob }));
       };
       source.connect(scriptProcessorRef.current);
       scriptProcessorRef.current.connect(audioContextRef.current.destination);
-    } catch (e) { 
-      setIsRecording(false); 
+    } catch (e) {
+      setIsRecording(false);
       setStatus('YOUR TURN');
     }
   };
@@ -163,38 +163,38 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
 
   return (
     <div className="h-full flex flex-col space-y-6 md:space-y-12 max-w-5xl mx-auto py-4 px-0">
-      
+
       {/* HP HEADER - Scaled for Mobile */}
       <div className="flex justify-between items-center gap-4 md:gap-12 pt-4 px-4 md:px-8">
         <div className={`flex-1 transition-all ${isShaking === 'player' ? 'animate-shake' : ''}`}>
           <div className="flex items-center gap-2 md:gap-4 mb-2 md:mb-3">
-             <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center shadow-lg shrink-0">
-                <User className="text-indigo-500" size={18} />
-             </div>
-             <div className="overflow-hidden">
-               <p className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-500 truncate">SCHOLAR</p>
-               <p className="rpg-font text-base md:text-2xl font-black leading-none">{playerHp} HP</p>
-             </div>
+            <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center shadow-lg shrink-0">
+              <User className="text-indigo-500" size={18} />
+            </div>
+            <div className="overflow-hidden">
+              <p className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-500 truncate">SCHOLAR</p>
+              <p className="rpg-font text-base md:text-2xl font-black leading-none">{playerHp} HP</p>
+            </div>
           </div>
           <div className="h-2 md:h-3 bg-slate-200 dark:bg-slate-900 rounded-full overflow-hidden border dark:border-slate-800 shadow-inner">
-            <motion.div animate={{ width: `${(playerHp/playerStats.maxHp)*100}%` }} className="h-full bg-gradient-to-r from-blue-600 to-indigo-500" />
+            <motion.div animate={{ width: `${(playerHp / playerStats.maxHp) * 100}%` }} className="h-full bg-gradient-to-r from-blue-600 to-indigo-500" />
           </div>
         </div>
 
         <div className="flex flex-col items-center opacity-30 shrink-0">
-           <Sword size={16} className="md:w-6 md:h-6" />
-           <span className="text-[10px] md:text-xs font-black rpg-font">VS</span>
+          <Sword size={16} className="md:w-6 md:h-6" />
+          <span className="text-[10px] md:text-xs font-black rpg-font">VS</span>
         </div>
 
         <div className={`flex-1 text-right transition-all ${isShaking === 'enemy' ? 'animate-shake' : ''}`}>
           <div className="flex items-center gap-2 md:gap-4 mb-2 md:mb-3 justify-end">
-             <div className="overflow-hidden text-right">
-               <p className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-500 truncate">WRAITH</p>
-               <p className="rpg-font text-base md:text-2xl font-black leading-none">{enemyHp} HP</p>
-             </div>
-             <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center shadow-lg shrink-0">
-                <Zap className="text-red-500" size={18} />
-             </div>
+            <div className="overflow-hidden text-right">
+              <p className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-500 truncate">WRAITH</p>
+              <p className="rpg-font text-base md:text-2xl font-black leading-none">{enemyHp} HP</p>
+            </div>
+            <div className="w-10 h-10 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center shadow-lg shrink-0">
+              <Zap className="text-red-500" size={18} />
+            </div>
           </div>
           <div className="h-2 md:h-3 bg-slate-200 dark:bg-slate-900 rounded-full overflow-hidden border dark:border-slate-800 shadow-inner">
             <motion.div animate={{ width: `${enemyHp}%` }} className="h-full bg-gradient-to-l from-red-600 to-orange-500" />
@@ -205,8 +205,8 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
       <div className="flex-1 mx-2 md:mx-4 dark:bg-slate-900/30 bg-white border dark:border-slate-800 border-slate-200 rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-12 flex flex-col items-center justify-center relative shadow-2xl backdrop-blur-sm overflow-hidden min-h-[400px]">
         <AnimatePresence>
           {damageNumbers.map(d => (
-            <motion.div 
-              key={d.id} 
+            <motion.div
+              key={d.id}
               initial={{ y: 0, opacity: 1, scale: 0.5 }}
               animate={{ y: -150, opacity: 0, scale: 1.5 }}
               exit={{ opacity: 0 }}
@@ -220,7 +220,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
 
         {mode === 'pvp_blitz' && (
           <div className="space-y-6 md:space-y-12 w-full max-w-md text-center px-6 md:px-0">
-            <motion.h2 
+            <motion.h2
               key={currentVocabQ.word}
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -230,7 +230,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
             </motion.h2>
             <div className="grid grid-cols-2 gap-3 md:gap-4">
               {currentVocabQ.options.map(opt => (
-                <button 
+                <button
                   key={opt}
                   onClick={() => handleBlitzAnswer(opt)}
                   disabled={answered}
@@ -246,19 +246,19 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
         {mode === 'pvp_tactics' && (
           <div className="space-y-6 md:space-y-12 w-full max-w-2xl text-center px-6 md:px-0">
             <div className="space-y-2">
-               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-500">Syntax Challenge</span>
-               <motion.h2 
-                 key={currentGrammarQ.prompt}
-                 initial={{ opacity: 0, y: 10 }}
-                 animate={{ opacity: 1, y: 0 }}
-                 className="text-lg md:text-3xl font-bold dark:text-white text-slate-900 px-4 leading-relaxed italic"
-               >
-                 {currentGrammarQ.prompt}
-               </motion.h2>
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-500">Syntax Challenge</span>
+              <motion.h2
+                key={currentGrammarQ.prompt}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-lg md:text-3xl font-bold dark:text-white text-slate-900 px-4 leading-relaxed italic"
+              >
+                {currentGrammarQ.prompt}
+              </motion.h2>
             </div>
             <div className="grid grid-cols-2 gap-3 md:gap-4">
               {currentGrammarQ.options.map(opt => (
-                <button 
+                <button
                   key={opt}
                   onClick={() => handleTacticsAnswer(opt)}
                   disabled={answered}
@@ -276,9 +276,9 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
             <h2 className="text-xl md:text-4xl font-black rpg-font italic leading-relaxed px-4 dark:text-white text-slate-900">
               "在这片充满未知的土地上，唯有知识能驱散永恒的黑暗。"
             </h2>
-            
+
             <div className="py-12">
-               <div className="text-xs md:text-sm font-black uppercase tracking-[0.4em] text-slate-500 animate-pulse">{status}</div>
+              <div className="text-xs md:text-sm font-black uppercase tracking-[0.4em] text-slate-500 animate-pulse">{status}</div>
             </div>
           </div>
         )}
@@ -292,25 +292,25 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
 
       {/* FLOATING ACTION MIC FOR CHANT DUEL - Consistent with Oral Training repositioning */}
       {(mode === 'pvp_chant') && (
-        <div className="fixed z-[150] bottom-28 right-6 md:right-auto md:left-1/2 md:-translate-x-1/2">
+        <div className="fixed z-[150] flex flex-col items-center gap-4 right-6 bottom-32 md:right-12 md:bottom-[140px]">
           <div className="flex flex-col items-center gap-4">
-            
+
             <AnimatePresence>
               {isRecording && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   className="px-4 py-1.5 rounded-full bg-red-600 text-white border border-white/20 shadow-2xl backdrop-blur-md whitespace-nowrap"
                 >
-                   <p className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 animate-pulse">
-                     CHANTER ACTIVE...
-                   </p>
+                  <p className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 animate-pulse">
+                    CHANTER ACTIVE...
+                  </p>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <motion.button 
+            <motion.button
               onMouseDown={startChant}
               onMouseUp={stopChant}
               onTouchStart={startChant}
@@ -318,20 +318,19 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
               disabled={status === 'STRIKING...'}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              className={`group relative w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all shadow-[0_15px_40px_rgba(0,0,0,0.4)] border-4 border-white dark:border-slate-900 ${
-                isRecording ? 'bg-red-600' : 
+              className={`group relative w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all shadow-[0_15px_40px_rgba(0,0,0,0.4)] border-4 border-white dark:border-slate-900 ${isRecording ? 'bg-red-600' :
                 'bg-indigo-600 shadow-indigo-500/40'
-              }`}
+                }`}
             >
               {isRecording && (
-                <motion.div 
+                <motion.div
                   animate={{ scale: [1, 2.2], opacity: [0.6, 0] }}
                   transition={{ repeat: Infinity, duration: 1 }}
                   className="absolute inset-0 bg-red-400 rounded-full"
                 />
               )}
               <Mic size={28} className="text-white" />
-              
+
               <div className="absolute right-full mr-4 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-white/10 pointer-events-none hidden md:block">
                 Hold to Chant (咏唱)
               </div>

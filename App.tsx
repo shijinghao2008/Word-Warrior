@@ -200,7 +200,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
 
               {/* Decorative Corner Icon */}
               <div className="absolute -bottom-2 -right-2 opacity-10 text-white group-hover:scale-150 transition-transform">
-                {React.cloneElement(mode.icon as React.ReactElement, { size: 64 })}
+                {React.cloneElement(mode.icon as any, { size: 64 })}
               </div>
             </motion.button>
           ))}
@@ -305,7 +305,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto px-4 custom-scrollbar relative">
+      <main className={`flex-1 overflow-y-auto px-4 custom-scrollbar relative transition-all duration-300 ${isArenaMenuOpen ? 'blur-sm scale-95 opacity-80 pointer-events-none select-none' : ''}`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -333,7 +333,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
       </main>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-[100] px-4 pb-8 pt-2 pointer-events-none">
+      <div className="fixed bottom-0 left-0 right-0 z-[200] px-4 pb-8 pt-2 pointer-events-none">
         <div className="max-w-lg mx-auto relative pointer-events-auto">
 
           {/* Arena Pop-up Menu */}
@@ -345,7 +345,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   onClick={() => setIsArenaMenuOpen(false)}
-                  className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[-1]"
+                  className="fixed inset-0 z-[-1]"
                 />
                 <div className="absolute bottom-32 left-1/2 -translate-x-1/2 flex gap-4 md:gap-8 items-end justify-center w-full px-4">
                   {PVP_MODES.map((mode, idx) => (

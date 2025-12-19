@@ -48,7 +48,7 @@ const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) =
   const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const sessionRef = useRef<any>(null);
-  
+
   // Gesture Refs
   const startXRef = useRef<number>(0);
   const startYRef = useRef<number>(0);
@@ -59,7 +59,7 @@ const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) =
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(() => setMicPermission(true))
       .catch(() => setMicPermission(false));
-      
+
     return () => {
       cleanupAudio();
       if (sessionRef.current) sessionRef.current.close();
@@ -113,13 +113,13 @@ const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) =
         try {
           const jsonStr = response.replace(/```json/g, '').replace(/```/g, '').trim();
           const data = JSON.parse(jsonStr);
-          
+
           setResult({
             score: data.score || 0,
             feedback: (data.feedback || "") + "\n\n" + (data.suggestions || ""),
             dimensions: data.dimensions
           });
-          
+
           if (data.score > 60) {
             onSuccess(Math.floor(data.score / 10));
           }
@@ -149,7 +149,7 @@ const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) =
       mediaStreamRef.current = stream;
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
       const nativeRate = audioContextRef.current.sampleRate;
-      
+
       const source = audioContextRef.current.createMediaStreamSource(stream);
       scriptProcessorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
 
@@ -159,7 +159,7 @@ const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) =
         const l = resampled.length;
         const int16 = new Int16Array(l);
         for (let i = 0; i < l; i++) int16[i] = resampled[i] * 32768;
-        
+
         if (sessionRef.current) {
           const pcmBlob = { data: encodeAudio(new Uint8Array(int16.buffer)), mimeType: 'audio/pcm;rate=16000' };
           sessionRef.current.sessionPromise.then((s: any) => s.sendRealtimeInput({ media: pcmBlob }));
@@ -202,7 +202,7 @@ const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) =
         <span>{score}</span>
       </div>
       <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-        <motion.div 
+        <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${score}%` }}
           className={`h-full ${score > 80 ? 'bg-emerald-500' : score > 60 ? 'bg-amber-500' : 'bg-red-500'}`}
@@ -213,32 +213,32 @@ const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) =
 
   return (
     <div className="h-full flex flex-col relative select-none pb-20">
-      
+
       {/* 1. Topic Section - Quest Scroll Design */}
       <div className="px-4 pt-4 shrink-0">
         <div className="relative group">
           <div className="absolute inset-0 bg-indigo-500/5 blur-2xl rounded-[2rem] -z-10" />
           <div className="bg-white dark:bg-slate-900 border-2 dark:border-slate-800 border-slate-200 rounded-[2rem] p-6 shadow-xl relative overflow-hidden">
-             
-             <div className="flex items-center justify-between mb-4">
-               <div className="flex items-center gap-2">
-                 <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
-                    <Sparkles size={16} className="text-indigo-500" />
-                 </div>
-                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">修行课题 (Topic)</span>
-               </div>
-               <button 
-                 onClick={refreshTopic}
-                 className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-400 hover:text-indigo-500"
-               >
-                 <RefreshCw size={14} />
-               </button>
-             </div>
-             
-             <h3 className="text-lg md:text-xl font-bold dark:text-white text-slate-900 leading-snug italic pr-8">
-               "{currentTopic}"
-             </h3>
-             <p className="mt-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">请针对以上话题发表你的见解</p>
+
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                  <Sparkles size={16} className="text-indigo-500" />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">修行课题 (Topic)</span>
+              </div>
+              <button
+                onClick={refreshTopic}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-400 hover:text-indigo-500"
+              >
+                <RefreshCw size={14} />
+              </button>
+            </div>
+
+            <h3 className="text-lg md:text-xl font-bold dark:text-white text-slate-900 leading-snug italic pr-8">
+              "{currentTopic}"
+            </h3>
+            <p className="mt-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">请针对以上话题发表你的见解</p>
           </div>
         </div>
       </div>
@@ -296,23 +296,22 @@ const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) =
         )}
       </div>
 
-      {/* 3. Floating Mic Controls - Centered on MD+, Right-aligned on mobile */}
+      {/* 3. Floating Mic Controls - Always Right Aligned */}
       <div className="fixed z-[150] flex flex-col items-center gap-4 transition-all duration-500 
         right-6 bottom-32 
-        md:right-auto md:left-1/2 md:-translate-x-1/2 md:bottom-[130px]"
+        md:right-12 md:bottom-[140px]"
       >
-        
+
         <AnimatePresence>
           {status === 'listening' && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className={`absolute right-full mr-4 px-4 py-2 rounded-full whitespace-nowrap shadow-2xl border flex items-center gap-3 ${
-                isCanceling 
-                  ? 'bg-red-600 border-white text-white' 
+              className={`absolute right-full mr-4 px-4 py-2 rounded-full whitespace-nowrap shadow-2xl border flex items-center gap-3 ${isCanceling
+                  ? 'bg-red-600 border-white text-white'
                   : 'bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-slate-200 dark:border-slate-800 text-slate-600 dark:text-white'
-              }`}
+                }`}
             >
               {isCanceling ? <X size={16} /> : <Activity size={16} className="text-emerald-500 animate-pulse" />}
               <span className="text-[11px] font-black uppercase tracking-widest">
@@ -341,20 +340,20 @@ const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) =
           whileTap={{ scale: 0.9 }}
           className={`
             w-16 h-16 md:w-20 md:h-20 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center justify-center transition-all duration-300 border-4 border-white dark:border-slate-950
-            ${!micPermission ? 'bg-slate-400 grayscale cursor-not-allowed' : 
-              status === 'listening' 
-                ? 'bg-red-600 border-red-400' 
+            ${!micPermission ? 'bg-slate-400 grayscale cursor-not-allowed' :
+              status === 'listening'
+                ? 'bg-red-600 border-red-400'
                 : 'bg-indigo-600 shadow-indigo-500/40 hover:bg-indigo-500'
             }
           `}
         >
           {status === 'listening' && (
-             <span className="absolute inset-0 rounded-full bg-red-400/50 animate-ping" />
+            <span className="absolute inset-0 rounded-full bg-red-400/50 animate-ping" />
           )}
           {status === 'analyzing' ? (
-             <RefreshCw size={32} className="text-white animate-spin" />
+            <RefreshCw size={32} className="text-white animate-spin" />
           ) : (
-             <Mic size={32} className="text-white relative z-10" />
+            <Mic size={32} className="text-white relative z-10" />
           )}
         </motion.button>
       </div>
