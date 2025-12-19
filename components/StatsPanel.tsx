@@ -2,6 +2,7 @@
 import React from 'react';
 import { Swords, Shield, Zap, Heart, Star, Trophy, Sparkles } from 'lucide-react';
 import { UserStats, Rank } from '../types';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface StatsPanelProps {
   stats: UserStats;
@@ -9,6 +10,8 @@ interface StatsPanelProps {
 }
 
 const StatsPanel: React.FC<StatsPanelProps> = ({ stats, username }) => {
+  const { getColorClass, avatar } = useTheme();
+
   const StatItem = ({ icon: Icon, label, value, max, color }: any) => (
     <div className="space-y-2">
       <div className="flex justify-between items-end">
@@ -29,18 +32,21 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ stats, username }) => {
   return (
     <div className="space-y-10">
       <div className="flex items-center gap-6">
-        <div className="w-20 h-20 rounded-full dark:bg-white bg-slate-900 flex flex-col items-center justify-center dark:text-black text-white shadow-2xl">
-          <span className="text-[10px] font-black tracking-tighter -mb-1 uppercase">等级</span>
-          <span className="text-3xl font-black rpg-font leading-none">{stats.level}</span>
+        <div className={`w-20 h-20 rounded-full dark:bg-white bg-slate-900 flex flex-col items-center justify-center dark:text-black text-white shadow-2xl relative overflow-hidden`}>
+          {avatar.startsWith('data:image') || avatar.startsWith('http') ? (
+            <img src={avatar} alt="User Avatar" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-3xl">{avatar}</span>
+          )}
         </div>
         <div>
           <h2 className="text-2xl font-black rpg-font uppercase tracking-tighter dark:text-white text-slate-900">{username || '战士档案'}</h2>
-          <p className="text-xs font-black tracking-[0.2em] text-indigo-500 dark:text-indigo-400 uppercase">{stats.rank} 阶位</p>
+          <p className={`text-xs font-black tracking-[0.2em] ${getColorClass('text', 500)} uppercase`}>{stats.rank} 阶位</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        <StatItem icon={Star} label="成长进度" value={stats.exp} max={stats.level * 100} color="text-indigo-600 dark:text-indigo-400" />
+        <StatItem icon={Star} label="成长进度" value={stats.exp} max={stats.level * 100} color={getColorClass('text', 500)} />
         <StatItem icon={Heart} label="生命上限 (HP)" value={stats.hp} max={stats.maxHp} color="text-fuchsia-500" />
         <StatItem icon={Swords} label="词汇攻击 (ATK)" value={stats.atk} max={stats.level * 20} color="text-blue-500" />
         <StatItem icon={Shield} label="语法防御 (DEF)" value={stats.def} max={stats.level * 20} color="text-emerald-500" />
@@ -55,7 +61,7 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ stats, username }) => {
         </div>
         <div className="w-px h-10 dark:bg-slate-800 bg-slate-200" />
         <div className="text-center">
-          <Zap size={20} className="mx-auto text-indigo-400 mb-2" />
+          <Zap size={20} className={`mx-auto ${getColorClass('text', 400)} mb-2`} />
           <p className="text-[10px] font-black dark:text-slate-500 text-slate-400 uppercase tracking-widest">连胜数</p>
           <p className="text-lg font-black rpg-font dark:text-white text-slate-900">{stats.winStreak}</p>
         </div>

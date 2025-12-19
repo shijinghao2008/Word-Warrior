@@ -5,6 +5,7 @@ import { Mic, Shield, User, Zap, Flame, Sword, Target, ShieldCheck, Loader2, XCi
 import { startLiveSession, encodeAudio, resampleAudio } from '../services/liveService';
 import { MOCK_GRAMMAR_QUESTIONS } from '../constants.tsx';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../services/supabaseClient';
 import { findMatch, cancelMatchmaking, submitAnswer, getOpponentProfile, PvPRoom } from '../services/pvpService';
 
@@ -17,6 +18,7 @@ interface BattleArenaProps {
 
 const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory, onDefeat }) => {
   const { user } = useAuth();
+  const { getColorClass, primaryColor } = useTheme();
   const userId = user?.id;
 
   // Generic State
@@ -534,7 +536,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
                   key={questions[currentQIndex].word}
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  className="text-3xl md:text-7xl font-black rpg-font tracking-tighter dark:text-white text-slate-900 px-4"
+                  className="text-3xl md:text-7xl font-mono font-bold tracking-tighter dark:text-white text-slate-900 px-4"
                 >
                   {questions[currentQIndex].word}
                 </motion.h2>
@@ -617,7 +619,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               className={`group relative w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all shadow-[0_15px_40px_rgba(0,0,0,0.4)] border-4 border-white dark:border-slate-900 ${isRecording ? 'bg-red-600' :
-                'bg-indigo-600 shadow-indigo-500/40'
+                `${getColorClass('bg', 600)} shadow-lg shadow-${primaryColor}-500/40`
                 }`}
             >
               <Mic size={28} className="text-white" />

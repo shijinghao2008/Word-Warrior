@@ -66,7 +66,7 @@ const LearningCard: React.FC<LearningCardProps> = ({ word, index, total, onNext 
       {/* Content */}
       <div className="flex-1 flex flex-col items-center justify-center space-y-8 w-full text-center">
         <div>
-          <h2 className="text-5xl md:text-6xl font-black rpg-font tracking-tight dark:text-white text-slate-900 mb-2 select-none">
+          <h2 className="text-5xl md:text-6xl font-mono font-bold tracking-tight dark:text-white text-slate-900 mb-2 select-none">
             {word.word}
           </h2>
           {word.phonetic && (
@@ -149,7 +149,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, onAnswer, questionIndex, 
         <span className="text-xs font-black uppercase tracking-widest text-indigo-500">
           Quiz {questionIndex + 1} / {totalQuestions}
         </span>
-        <h2 className="text-4xl md:text-5xl font-black rpg-font dark:text-white text-slate-900">
+        <h2 className="text-4xl md:text-5xl font-mono font-bold dark:text-white text-slate-900">
           {question.word.word}
         </h2>
       </div>

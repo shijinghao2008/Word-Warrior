@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, X, Award, CheckCircle2, Sparkles, Activity, MessageSquare, RefreshCw } from 'lucide-react';
 import { startLiveSession, encodeAudio, resampleAudio } from '../services/liveService';
 import ReactMarkdown from 'react-markdown';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface OralTrainingProps {
   playerStats: any;
@@ -22,26 +23,30 @@ interface Assessment {
   };
 }
 
-const ORAL_TOPICS = [
-  "Describe a book you have read recently that you found interesting.",
-  "What are the advantages and disadvantages of working from home?",
-  "Talk about a traditional festival in your country.",
-  "How has technology changed the way people communicate in the last decade?",
-  "Should schools focus more on practical skills than academic knowledge?",
-  "Describe a place you have visited that you would recommend to others.",
-  "What qualities make a good leader in today's society?",
-  "Do you think artificial intelligence will replace human teachers one day?",
-  "Discuss the importance of protecting the environment for future generations.",
-  "If you could travel back in time, which era would you visit and why?"
+const TOPICS = [
+  '日常闲聊 (Daily Chat)',
+  '旅游出行 (Travel)',
+  '职场商务 (Business)',
+  '学术探讨 (Academic)',
+  '科技前沿 (Tech)'
+];
+
+const DIFFICULTIES = [
+  'Easy (初级)',
+  'Medium (中级)',
+  'Hard (高级)'
 ];
 
 const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) => {
+  const { getColorClass, primaryColor } = useTheme();
   // State
   const [status, setStatus] = useState<'ready' | 'listening' | 'analyzing'>('ready');
   const [result, setResult] = useState<Assessment | null>(null);
   const [isCanceling, setIsCanceling] = useState(false);
   const [micPermission, setMicPermission] = useState(true);
-  const [currentTopic, setCurrentTopic] = useState("");
+
+  const [currentTopic, setCurrentTopic] = useState(TOPICS[0]); // Default to first topic
+  const [difficulty, setDifficulty] = useState(DIFFICULTIES[1]); // Default to Medium
 
   // Refs
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -54,7 +59,6 @@ const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) =
   const startYRef = useRef<number>(0);
 
   useEffect(() => {
-    refreshTopic();
     // Check permission on mount
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(() => setMicPermission(true))
@@ -65,11 +69,6 @@ const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) =
       if (sessionRef.current) sessionRef.current.close();
     };
   }, []);
-
-  const refreshTopic = () => {
-    const randomTopic = ORAL_TOPICS[Math.floor(Math.random() * ORAL_TOPICS.length)];
-    setCurrentTopic(randomTopic);
-  };
 
   const cleanupAudio = () => {
     if (scriptProcessorRef.current) {
@@ -90,6 +89,8 @@ const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) =
     if (!sessionRef.current) {
       const systemPrompt = `
         You are an expert English Evaluator. 
+        Level: ${difficulty}
+        Topic: ${currentTopic}
         Wait for the user to provide an audio speech.
         The user is speaking about the topic: "${currentTopic}"
         When you receive the text command "EVALUATE_NOW", analyze the preceding speech.
@@ -214,33 +215,68 @@ const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) =
   return (
     <div className="h-full flex flex-col relative select-none pb-20">
 
-      {/* 1. Topic Section - Quest Scroll Design */}
-      <div className="px-4 pt-4 shrink-0">
-        <div className="relative group">
-          <div className="absolute inset-0 bg-indigo-500/5 blur-2xl rounded-[2rem] -z-10" />
-          <div className="bg-white dark:bg-slate-900 border-2 dark:border-slate-800 border-slate-200 rounded-[2rem] p-6 shadow-xl relative overflow-hidden">
+      {/* 1. Settings Section (Topic & Difficulty) */}
+      <div className="px-4 pt-4 shrink-0 space-y-4">
 
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center">
-                  <Sparkles size={16} className="text-indigo-500" />
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">修行课题 (Topic)</span>
-              </div>
-              <button
-                onClick={refreshTopic}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-400 hover:text-indigo-500"
-              >
-                <RefreshCw size={14} />
-              </button>
-            </div>
+        {/* Controls */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase text-slate-400 pl-2">话题 (Topic)</label>
+            <select
+              value={currentTopic}
+              onChange={(e) => {
+                setCurrentTopic(e.target.value);
+                // Close session if open to reset prompting context
+                if (sessionRef.current) {
+                  sessionRef.current.close();
+                  sessionRef.current = null;
+                }
+              }}
+              className="w-full p-3 rounded-xl bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-500 transition-colors"
+            >
+              {TOPICS.map(t => (
+                <option key={t} value={t}>{t.split('(')[0].trim()}</option>
+              ))}
+            </select>
+          </div>
 
-            <h3 className="text-lg md:text-xl font-bold dark:text-white text-slate-900 leading-snug italic pr-8">
-              "{currentTopic}"
-            </h3>
-            <p className="mt-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">请针对以上话题发表你的见解</p>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase text-slate-400 pl-2">难度 (Difficulty)</label>
+            <select
+              value={difficulty}
+              onChange={(e) => {
+                setDifficulty(e.target.value);
+                if (sessionRef.current) {
+                  sessionRef.current.close();
+                  sessionRef.current = null;
+                }
+              }}
+              className="w-full p-3 rounded-xl bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-indigo-500 transition-colors"
+            >
+              {DIFFICULTIES.map(d => (
+                <option key={d} value={d}>{d.split('(')[0].trim()}</option>
+              ))}
+            </select>
           </div>
         </div>
+
+        {/* Current Topic Display (Visual Feedback) */}
+        <div className="relative group">
+          <div className="absolute inset-0 bg-indigo-500/5 blur-xl rounded-[2rem] -z-10" />
+          <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-2 dark:border-slate-800 border-slate-200 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Current Focus</span>
+              <h3 className="text-sm md:text-base font-bold dark:text-white text-slate-900 leading-tight">
+                "{currentTopic}"
+              </h3>
+              <span className="text-[10px] text-indigo-500 font-bold mt-1 max-w-[200px] truncate">{difficulty} Level</span>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-slate-800 flex items-center justify-center">
+              <Sparkles size={18} className="text-indigo-500" />
+            </div>
+          </div>
+        </div>
+
       </div>
 
       {/* 2. Main Display: Score & Evaluation */}
@@ -309,8 +345,8 @@ const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) =
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               className={`absolute right-full mr-4 px-4 py-2 rounded-full whitespace-nowrap shadow-2xl border flex items-center gap-3 ${isCanceling
-                  ? 'bg-red-600 border-white text-white'
-                  : 'bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-slate-200 dark:border-slate-800 text-slate-600 dark:text-white'
+                ? 'bg-red-600 border-white text-white'
+                : 'bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-slate-200 dark:border-slate-800 text-slate-600 dark:text-white'
                 }`}
             >
               {isCanceling ? <X size={16} /> : <Activity size={16} className="text-emerald-500 animate-pulse" />}
@@ -343,7 +379,7 @@ const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) =
             ${!micPermission ? 'bg-slate-400 grayscale cursor-not-allowed' :
               status === 'listening'
                 ? 'bg-red-600 border-red-400'
-                : 'bg-indigo-600 shadow-indigo-500/40 hover:bg-indigo-500'
+                : `${getColorClass('bg', 600)} shadow-lg shadow-${primaryColor}-500/40 hover:brightness-110`
             }
           `}
         >

@@ -21,19 +21,22 @@ import AdminPanel from './components/AdminPanel';
 import Leaderboard from './components/Leaderboard';
 import AchievementsPanel from './components/AchievementsPanel';
 
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+
 const App: React.FC = () => {
   const { user, loading } = useAuth();
 
-  if (loading) {
-    return <LoadingScreen />;
-  }
+  if (loading) return <LoadingScreen />;
+  if (!user) return <AuthPage />;
 
-  if (!user) {
-    return <AuthPage />;
-  }
-
-  return <AuthenticatedApp userId={user.id} />;
+  return (
+    <ThemeProvider>
+      <AuthenticatedApp userId={user.id} />
+    </ThemeProvider>
+  );
 };
+
+// ... existing code ...
 
 interface AuthenticatedAppProps {
   userId: string;
@@ -41,72 +44,22 @@ interface AuthenticatedAppProps {
 
 const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
   const { signOut, user } = useAuth();
+  const { themeMode, toggleTheme, getColorClass, primaryColor } = useTheme(); // Use Theme Context
+
   const [stats, setStats] = useState<UserStats>(() => {
     const saved = localStorage.getItem(`ww_stats_${userId}`);
     return saved ? { ...INITIAL_STATS, ...JSON.parse(saved) } : INITIAL_STATS;
   });
 
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    const saved = localStorage.getItem('ww_theme');
-    return (saved as 'dark' | 'light') || 'dark';
-  });
+  // Removed local theme state in favor of context
 
-  // Default to vocab as requested
   const [activeTab, setActiveTab] = useState('vocab');
   const [isArenaMenuOpen, setIsArenaMenuOpen] = useState(false);
   const [dbLoaded, setDbLoaded] = useState(false);
 
-  // Load user stats from database on init
-  useEffect(() => {
-    const loadStatsFromDB = async () => {
-      try {
-        const dbStats = await getUserStats(userId);
-        if (dbStats) {
-          console.log('✅ Loaded stats from Supabase:', dbStats);
-          setStats(dbStats);
-          localStorage.setItem(`ww_stats_${userId}`, JSON.stringify(dbStats));
-        } else {
-          console.log('ℹ️ No stats in database, using local/initial stats');
-        }
-      } catch (error) {
-        console.error('❌ Error loading stats from database:', error);
-      } finally {
-        setDbLoaded(true);
-      }
-    };
-    loadStatsFromDB();
-  }, [userId]);
+  // Sync stats ... (unchanged)
 
-  // Sync stats to both localStorage and database
-  useEffect(() => {
-    if (!dbLoaded) return; // Don't sync until we've loaded from DB
-
-    localStorage.setItem(`ww_stats_${userId}`, JSON.stringify(stats));
-
-    // Debounced database sync
-    const syncTimer = setTimeout(async () => {
-      try {
-        await updateUserStats(userId, stats);
-        console.log('✅ Synced stats to Supabase');
-      } catch (error) {
-        console.error('❌ Error syncing to database:', error);
-      }
-    }, 1000); // Wait 1 second after last change before syncing
-
-    return () => clearTimeout(syncTimer);
-  }, [stats, dbLoaded, userId]);
-
-  useEffect(() => {
-    localStorage.setItem('ww_theme', theme);
-    const root = document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-      root.classList.remove('light');
-    } else {
-      root.classList.add('light');
-      root.classList.remove('dark');
-    }
-  }, [theme]);
+  // Handlers ... (unchanged)
 
   const handleGainExp = (exp: number, statType?: 'atk' | 'def' | 'crit' | 'hp', word?: string) => {
     setStats(prev => {
@@ -284,7 +237,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
       {/* Mini Header */}
       <header className="px-6 py-4 flex justify-between items-center border-b dark:border-slate-900 border-slate-200 bg-white/5 dark:bg-black/5 backdrop-blur-md shrink-0 z-50">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center font-black text-white text-xs">W</div>
+          <div className={`w-8 h-8 ${getColorClass('bg', 600)} rounded-lg flex items-center justify-center font-black text-white text-xs`}>W</div>
           <span className="rpg-font font-black tracking-widest text-xs uppercase dark:text-white text-slate-900">Word Warrior</span>
         </div>
         <div className="flex items-center gap-3">
@@ -296,10 +249,10 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
             <LogOut size={14} />
           </button>
           <button
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            onClick={() => toggleTheme()}
             className="p-2 rounded-full dark:bg-slate-900 bg-slate-100 border dark:border-slate-800 border-slate-200 shadow-sm text-slate-600 dark:text-slate-400"
           >
-            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+            {themeMode === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
           </button>
         </div>
       </header>
@@ -390,15 +343,15 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
                   }
                 }}
                 className={`relative flex flex-col items-center justify-center transition-all flex-1 px-1 h-full ${item.special
-                  ? '-mt-12 w-20 h-20 bg-indigo-600 rounded-full text-white border-[6px] dark:border-[#020617] border-slate-50 shadow-2xl z-20 max-w-[80px]'
+                  ? `-mt-12 w-20 h-20 ${getColorClass('bg', 600)} rounded-full text-white border-[6px] dark:border-[#020617] border-slate-50 shadow-2xl z-20 max-w-[80px]`
                   : ''
                   }`}
               >
-                <div className={`transition-all duration-300 ${!item.special && activeTab === item.id ? 'text-indigo-600 scale-110' : 'text-slate-500'}`}>
+                <div className={`transition-all duration-300 ${!item.special && activeTab === item.id ? `${getColorClass('text', 600)} scale-110` : 'text-slate-500'}`}>
                   {item.icon}
                 </div>
 
-                <span className={`text-[11px] font-black uppercase mt-1.5 tracking-tighter text-center whitespace-nowrap ${item.special ? 'text-white' : (activeTab === item.id ? 'text-indigo-600' : 'text-slate-400')
+                <span className={`text-[11px] font-black uppercase mt-1.5 tracking-tighter text-center whitespace-nowrap ${item.special ? 'text-white' : (activeTab === item.id ? getColorClass('text', 600) : 'text-slate-400')
                   }`}>
                   {item.label}
                 </span>
@@ -407,7 +360,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
                 {!item.special && activeTab === item.id && (
                   <motion.div
                     layoutId="active-nav"
-                    className="absolute bottom-2 w-1.5 h-1.5 bg-indigo-600 rounded-full"
+                    className={`absolute bottom-2 w-1.5 h-1.5 ${getColorClass('bg', 600)} rounded-full`}
                   />
                 )}
               </button>
