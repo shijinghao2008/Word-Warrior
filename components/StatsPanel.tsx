@@ -5,9 +5,10 @@ import { UserStats, Rank } from '../types';
 
 interface StatsPanelProps {
   stats: UserStats;
+  username?: string;
 }
 
-const StatsPanel: React.FC<StatsPanelProps> = ({ stats }) => {
+const StatsPanel: React.FC<StatsPanelProps> = ({ stats, username }) => {
   const StatItem = ({ icon: Icon, label, value, max, color }: any) => (
     <div className="space-y-2">
       <div className="flex justify-between items-end">
@@ -17,9 +18,9 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ stats }) => {
         <span className="text-xs font-bold dark:text-slate-200 text-slate-800">{value}{max ? ` / ${max}` : ''}</span>
       </div>
       <div className="h-1.5 w-full dark:bg-slate-800 bg-slate-100 rounded-full overflow-hidden border dark:border-slate-800 border-slate-200/50">
-        <div 
-          className={`h-full transition-all duration-700 ease-out ${color.replace('text-', 'bg-')} shadow-[0_0_8px_rgba(0,0,0,0.1)]`} 
-          style={{ width: `${Math.min((value / (max || 100)) * 100, 100)}%` }} 
+        <div
+          className={`h-full transition-all duration-700 ease-out ${color.replace('text-', 'bg-')} shadow-[0_0_8px_rgba(0,0,0,0.1)]`}
+          style={{ width: `${Math.min((value / (max || 100)) * 100, 100)}%` }}
         />
       </div>
     </div>
@@ -33,7 +34,7 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ stats }) => {
           <span className="text-3xl font-black rpg-font leading-none">{stats.level}</span>
         </div>
         <div>
-          <h2 className="text-2xl font-black rpg-font uppercase tracking-tighter dark:text-white text-slate-900">战士档案</h2>
+          <h2 className="text-2xl font-black rpg-font uppercase tracking-tighter dark:text-white text-slate-900">{username || '战士档案'}</h2>
           <p className="text-xs font-black tracking-[0.2em] text-indigo-500 dark:text-indigo-400 uppercase">{stats.rank} 阶位</p>
         </div>
       </div>

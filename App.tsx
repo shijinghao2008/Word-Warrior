@@ -40,7 +40,7 @@ interface AuthenticatedAppProps {
 }
 
 const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const [stats, setStats] = useState<UserStats>(() => {
     const saved = localStorage.getItem(`ww_stats_${userId}`);
     return saved ? { ...INITIAL_STATS, ...JSON.parse(saved) } : INITIAL_STATS;
@@ -231,7 +231,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
           <h2 className="text-[12px] font-black uppercase tracking-widest text-slate-500">战士档案 (Warrior Profile)</h2>
         </div>
         <div className="dark:bg-slate-900/40 bg-white p-6 rounded-[2.5rem] border dark:border-slate-800 border-slate-200 shadow-xl backdrop-blur-sm">
-          <StatsPanel stats={stats} />
+          <StatsPanel stats={stats} username={user?.user_metadata?.username || 'Word Warrior'} />
         </div>
       </div>
 
