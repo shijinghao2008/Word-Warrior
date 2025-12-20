@@ -307,10 +307,10 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
       setPvpState('end');
       if (room.winner_id === userId) {
         setStatus('YOU WIN!');
-        onVictory();
+        // onVictory(); // Waiting for manual exit
       } else {
         setStatus('YOU LOSE!');
-        onDefeat();
+        // onDefeat(); // Waiting for manual exit
       }
       return;
     }
@@ -702,7 +702,45 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
         </div>
       )}
 
-    </div>
+
+
+      {/* GAME OVER OVERLAY */}
+      <AnimatePresence>
+        {status === 'YOU WIN!' || status === 'YOU LOSE!' ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center p-8"
+          >
+            <motion.div
+              initial={{ scale: 0.5, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              className="text-center space-y-8"
+            >
+              <div className="space-y-4">
+                <h2 className={`text-6xl md:text-8xl font-black italic tracking-tighter ${status === 'YOU WIN!' ? 'text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.5)]' : 'text-red-500 drop-shadow-[0_0_30px_rgba(239,68,68,0.5)]'}`}>
+                  {status}
+                </h2>
+                <p className="text-slate-400 font-bold tracking-widest uppercase">
+                  {status === 'YOU WIN!' ? 'Victory Achieved' : 'Defeat accepted'}
+                </p>
+              </div>
+
+              <div className="flex gap-4 justify-center">
+                <button
+                  onClick={() => status === 'YOU WIN!' ? onVictory() : onDefeat()}
+                  className={`px-12 py-4 rounded-2xl font-black text-xl hover:scale-105 active:scale-95 transition-all shadow-xl ${status === 'YOU WIN!' ? 'bg-yellow-400 text-black hover:bg-yellow-300' : 'bg-red-500 text-white hover:bg-red-400'}`}
+                >
+                  {status === 'YOU WIN!' ? 'CLAIM REWARD' : 'RETURN TO BASE'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+    </div >
   );
 };
 
