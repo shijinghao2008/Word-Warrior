@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { ReadingMaterial } from '../types';
 import { readingService } from '../services/readingService';
 import ReadingList from './reading/ReadingList';
@@ -11,7 +12,9 @@ interface ReadingTrainingProps {
 }
 
 const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess }) => {
+  const { user } = useAuth();
   const [materials, setMaterials] = useState<ReadingMaterial[]>([]);
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [selectedMaterial, setSelectedMaterial] = useState<ReadingMaterial | null>(null);
   const [mode, setMode] = useState<'list' | 'read'>('list');
   const [loading, setLoading] = useState(true);
@@ -24,8 +27,12 @@ const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess }) => {
   const fetchMaterials = async () => {
     try {
       setLoading(true);
-      const data = await readingService.getReadingMaterials();
+      const [data, completedList] = await Promise.all([
+        readingService.getReadingMaterials(),
+        user ? readingService.getUserCompletedReadings(user.id) : Promise.resolve([])
+      ]);
       setMaterials(data);
+      setCompletedIds(new Set(completedList));
     } catch (err) {
       console.error(err);
       setError('Failed to load reading materials.');
@@ -46,13 +53,30 @@ const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess }) => {
     setMode('list');
   };
 
-  const handleQuizComplete = (score: number) => {
-    // Award EXP based on score, e.g., 20 EXP per correct answer
-    const expGained = score * 20;
-    if (expGained > 0) {
-      onSuccess(expGained);
+  const handleQuizComplete = async (score: number) => {
+    if (!selectedMaterial || !user) return;
+
+    try {
+      const result = await readingService.completeReading(user.id, selectedMaterial.id, score);
+
+      if (result.success) {
+        if (result.xpAwarded > 0) {
+          onSuccess(result.xpAwarded);
+        }
+        // Update local state to reflect completion immediately
+        setCompletedIds(prev => new Set(prev).add(selectedMaterial.id));
+
+        // Show alert for feedback (temporary UI)
+        alert(result.message);
+        // Return to list after successful completion
+        handleBackToList();
+      } else {
+        alert(result.message);
+      }
+    } catch (error) {
+      console.error('Error completing reading:', error);
+      alert('Failed to save progress. Please try again.');
     }
-    // Could add a delay or button to go back to list
   };
 
   if (loading) {
@@ -93,7 +117,11 @@ const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess }) => {
               </div>
             </div>
           </div>
-          <ReadingList materials={materials} onSelect={handleSelectMaterial} />
+          <ReadingList
+            materials={materials}
+            onSelect={handleSelectMaterial}
+            completedIds={completedIds}
+          />
         </>
       )}
 
