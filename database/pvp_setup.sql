@@ -1,14 +1,15 @@
--- PVP Tables Setup
+-- PVP Tables Setup (Word Blitz Mode)
+-- "Word Blitz" - Localized as 单词反击战
 
 -- 1. Queue Table for Matchmaking
-CREATE TABLE IF NOT EXISTS pvp_queue (
+CREATE TABLE IF NOT EXISTS pvp_word_blitz_queue (
     user_id UUID PRIMARY KEY,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     status TEXT DEFAULT 'waiting'
 );
 
 -- 2. Game Rooms Table
-CREATE TABLE IF NOT EXISTS pvp_rooms (
+CREATE TABLE IF NOT EXISTS pvp_word_blitz_rooms (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     player1_id UUID NOT NULL,
     player2_id UUID NOT NULL,
@@ -26,7 +27,7 @@ CREATE TABLE IF NOT EXISTS pvp_rooms (
 
 -- 3. Matchmaking Function
 -- Attempts to find a match in the queue. If found, creates a room. If not, adds user to queue.
-CREATE OR REPLACE FUNCTION join_pvp_queue(p_user_id UUID)
+CREATE OR REPLACE FUNCTION join_pvp_word_blitz_queue(p_user_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
 AS $$
@@ -35,12 +36,16 @@ DECLARE
     v_room_id UUID;
     v_questions JSONB;
 BEGIN
+    -- CRITICAL: Prevent race conditions where two players match simultaneously but miss each other.
+    -- This transaction-level lock ensures only one matchmaking attempt runs at a time.
+    PERFORM pg_advisory_xact_lock(hashtext('pvp_word_blitz_queue_lock'));
+
     -- Check if user is already in queue (optional, but good for cleanup)
-    DELETE FROM pvp_queue WHERE user_id = p_user_id;
+    DELETE FROM pvp_word_blitz_queue WHERE user_id = p_user_id;
 
     -- Look for a waiting opponent
     SELECT user_id INTO v_opponent_id
-    FROM pvp_queue
+    FROM pvp_word_blitz_queue
     WHERE user_id != p_user_id -- AND status = 'waiting' (implied)
     ORDER BY created_at ASC
     LIMIT 1;
@@ -82,12 +87,12 @@ BEGIN
         FROM questions_with_distractors q;
 
         -- Create Room
-        INSERT INTO pvp_rooms (player1_id, player2_id, questions)
+        INSERT INTO pvp_word_blitz_rooms (player1_id, player2_id, questions)
         VALUES (v_opponent_id, p_user_id, v_questions) -- Oldest in queue becomes player1
         RETURNING id INTO v_room_id;
 
         -- Remove opponent from queue
-        DELETE FROM pvp_queue WHERE user_id = v_opponent_id;
+        DELETE FROM pvp_word_blitz_queue WHERE user_id = v_opponent_id;
         
         -- Return match info
         RETURN jsonb_build_object(
@@ -97,7 +102,7 @@ BEGIN
         );
     ELSE
         -- No match, add to queue
-        INSERT INTO pvp_queue (user_id) VALUES (p_user_id);
+        INSERT INTO pvp_word_blitz_queue (user_id) VALUES (p_user_id);
         RETURN jsonb_build_object(
             'status', 'waiting'
         );
@@ -107,7 +112,7 @@ $$;
 
 -- 4. Submit Answer Function
 -- atomic game state update
-CREATE OR REPLACE FUNCTION submit_pvp_answer(
+CREATE OR REPLACE FUNCTION submit_pvp_word_blitz_answer(
     p_room_id UUID,
     p_user_id UUID,
     p_question_index INTEGER,
@@ -126,7 +131,7 @@ DECLARE
     v_winner_id UUID := NULL;
 BEGIN
     -- Lock room for update
-    SELECT * INTO v_room FROM pvp_rooms WHERE id = p_room_id FOR UPDATE;
+    SELECT * INTO v_room FROM pvp_word_blitz_rooms WHERE id = p_room_id FOR UPDATE;
     
     -- Sync check: if question already moved on, ignore
     IF v_room.current_question_index != p_question_index THEN
@@ -173,7 +178,7 @@ BEGIN
     END IF;
 
     -- Update Room
-    UPDATE pvp_rooms 
+    UPDATE pvp_word_blitz_rooms 
     SET 
         player1_hp = v_p1_hp,
         player2_hp = v_p2_hp,
@@ -187,20 +192,20 @@ END;
 $$;
 
 -- 5. Helper to cancel matchmaking
-CREATE OR REPLACE FUNCTION leave_pvp_queue(p_user_id UUID)
+CREATE OR REPLACE FUNCTION leave_pvp_word_blitz_queue(p_user_id UUID)
 RETURNS VOID
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    DELETE FROM pvp_queue WHERE user_id = p_user_id;
+    DELETE FROM pvp_word_blitz_queue WHERE user_id = p_user_id;
 END;
 $$;
 
 -- 6. Setup Realtime & Security
 -- Ensure Realtime is enabled for these tables
 -- Force Replica Identity to ensure we get proper Update events
-ALTER TABLE pvp_queue REPLICA IDENTITY FULL;
-ALTER TABLE pvp_rooms REPLICA IDENTITY FULL;
+ALTER TABLE pvp_word_blitz_queue REPLICA IDENTITY FULL;
+ALTER TABLE pvp_word_blitz_rooms REPLICA IDENTITY FULL;
 
 BEGIN;
   -- Remove and re-add to ensure clean state
@@ -208,14 +213,14 @@ BEGIN;
   BEGIN
     -- Check if publication exists
     IF EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
-        -- Safely add pvp_queue if not present
-        IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'pvp_queue') THEN
-            ALTER PUBLICATION supabase_realtime ADD TABLE pvp_queue;
+        -- Safely add pvp_word_blitz_queue if not present
+        IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'pvp_word_blitz_queue') THEN
+            ALTER PUBLICATION supabase_realtime ADD TABLE pvp_word_blitz_queue;
         END IF;
 
-        -- Safely add pvp_rooms if not present
-        IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'pvp_rooms') THEN
-            ALTER PUBLICATION supabase_realtime ADD TABLE pvp_rooms;
+        -- Safely add pvp_word_blitz_rooms if not present
+        IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'pvp_word_blitz_rooms') THEN
+            ALTER PUBLICATION supabase_realtime ADD TABLE pvp_word_blitz_rooms;
         END IF;
     END IF;
   END
@@ -223,12 +228,13 @@ BEGIN;
 COMMIT;
 
 -- Enable RLS but allow public access for MVP simplicity (or restrict to auth users)
-ALTER TABLE pvp_queue ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pvp_rooms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pvp_word_blitz_queue ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pvp_word_blitz_rooms ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies to avoid conflict
-DROP POLICY IF EXISTS "Enable all for pvp_queue" ON pvp_queue;
-DROP POLICY IF EXISTS "Enable all for pvp_rooms" ON pvp_rooms;
+DROP POLICY IF EXISTS "Enable all for pvp_word_blitz_queue" ON pvp_word_blitz_queue;
+DROP POLICY IF EXISTS "Enable all for pvp_word_blitz_rooms" ON pvp_word_blitz_rooms;
 
-CREATE POLICY "Enable all for pvp_queue" ON pvp_queue FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Enable all for pvp_rooms" ON pvp_rooms FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable all for pvp_word_blitz_queue" ON pvp_word_blitz_queue FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Enable all for pvp_word_blitz_rooms" ON pvp_word_blitz_rooms FOR ALL USING (true) WITH CHECK (true);
+

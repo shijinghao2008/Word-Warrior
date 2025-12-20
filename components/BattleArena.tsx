@@ -7,7 +7,7 @@ import { MOCK_GRAMMAR_QUESTIONS } from '../constants.tsx';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../services/supabaseClient';
-import { findMatch, cancelMatchmaking, submitAnswer, getOpponentProfile, PvPRoom } from '../services/pvpService';
+import { findWordBlitzMatch, cancelWordBlitzMatchmaking, submitWordBlitzAnswer, getOpponentProfile, PvPRoom } from '../services/pvpService';
 
 interface BattleArenaProps {
   mode: string;
@@ -39,6 +39,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
   const [shuffledOptions, setShuffledOptions] = useState<string[]>([]);
   const [hasAnsweredCurrent, setHasAnsweredCurrent] = useState(false);
   const [searchingTime, setSearchingTime] = useState(0);
+  const [isGameConnected, setIsGameConnected] = useState(false); // New state to block interaction
 
   // State Refs for Subscription Callbacks (Avoid Stale Closures)
   const stateRef = useRef({
@@ -69,7 +70,11 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
       setPvpState('idle');
     }
     return () => {
-      if (roomId && userId) cancelMatchmaking(userId);
+      if (matchmakingChannelRef.current) {
+        supabase.removeChannel(matchmakingChannelRef.current);
+        matchmakingChannelRef.current = null;
+      }
+      if (roomId && userId) cancelWordBlitzMatchmaking(userId);
     };
   }, [mode]);
 
@@ -78,6 +83,9 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
   // ============================================
 
   // 1. Matchmaking
+  // 1. Matchmaking
+  const matchmakingChannelRef = useRef<any>(null); // Keep track of channel
+
   const startMatchmaking = async () => {
     if (!userId) return;
     setStatus('SEARCHING...');
@@ -87,79 +95,133 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
     // Timer for UI only
     const timer = setInterval(() => setSearchingTime(t => t + 1), 1000);
 
-    const result = await findMatch(userId);
+    // 1. Setup Realtime Subscription FIRST (to avoid race condition)
+    // We need to be listening BEFORE we put ourselves in the queue.
+    const setupSubscription = new Promise<void>((resolve) => {
+      console.log('🔌 Setting up Matchmaking Listener for player1_id=' + userId);
 
-    clearInterval(timer);
+      if (matchmakingChannelRef.current) {
+        supabase.removeChannel(matchmakingChannelRef.current);
+      }
+
+      const channel = supabase.channel('matchmaking_' + userId)
+        .on('postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'pvp_word_blitz_rooms', filter: `player1_id=eq.${userId}` },
+          async (payload) => {
+            console.log('✅ Match created Event Received!', payload);
+            const newRoom = payload.new as PvPRoom;
+
+            // Important: Unsubscribe first
+            if (matchmakingChannelRef.current) {
+              await supabase.removeChannel(matchmakingChannelRef.current);
+              matchmakingChannelRef.current = null;
+            }
+
+            clearInterval(timer);
+
+            console.log('Matchmaking channel removed, switching to game room...');
+            setMyRole('player1');
+            setRoomId(newRoom.id);
+            setPvpState('matched');
+            setStatus('MATCH FOUND!');
+            handleRoomUpdate(newRoom);
+          }
+        )
+        .subscribe((status) => {
+          console.log('Matchmaking subscription status:', status);
+          if (status === 'SUBSCRIBED') {
+            resolve();
+          }
+        });
+
+      matchmakingChannelRef.current = channel;
+
+      // Safety timeout - if subscription hangs, proceed anyway (rare but possible)
+      setTimeout(resolve, 2000);
+    });
+
+    await setupSubscription;
+
+    // 2. Call RPC to join queue (or match instantly)
+    const result = await findWordBlitzMatch(userId);
 
     if (result.status === 'matched' && result.roomId && result.role) {
-      setRoomId(result.roomId);
-      setMyRole(result.role);
-      setPvpState('matched');
-      setStatus('MATCH FOUND!');
-      // Fetch initial room state to get started immediately
-      const { data } = await supabase.from('pvp_rooms').select('*').eq('id', result.roomId).single();
-      if (data) handleRoomUpdate(data);
+      clearInterval(timer);
+
+      // We found a match immediately (we were the 2nd player)
+      if (matchmakingChannelRef.current) {
+        await supabase.removeChannel(matchmakingChannelRef.current);
+        matchmakingChannelRef.current = null;
+      }
+
+      // Small delay to ensure socket is clean before game subscription starts
+      setTimeout(() => {
+        setRoomId(result.roomId);
+        setMyRole(result.role as 'player1' | 'player2');
+        setPvpState('matched');
+        setStatus('MATCH FOUND!');
+        // Note: We do NOT manually fetch here. The game useEffect will handle initial fetch + sub.
+      }, 100);
+
+    } else if (result.status === 'waiting') {
+      // We are waiting. The channel we set up in Step 1 will handle the event when it comes.
+      console.log('⏳ Added to queue, waiting for opponent...');
     } else {
-      // If waiting, the Realtime subscription will handle the match event
-      // Wait, join_pvp_queue returns 'waiting'. We need to listen to the queue NOT generically, but specifically or just listen to 'pvp_queue' for our user?
-      // Actually simpler: Listen to 'pvp_queue' filtered by userId? No, row level security might not be set up.
-      // Better: The 'join_pvp_queue' adds us. If we are waiting, we should poll or listen.
-      // My SQL removes users from queue when matched. 
-      // Simplest 'Waiting' logic: Poll for room where I am player !
-      // OR: The second player CALLS 'join_pvp_queue' and gets 'matched'. The FIRST player needs to know.
-      // The SQL creates a room. So Player 1 should listen to 'pvp_rooms' INSERT where player1_id = me.
-      if (result.status === 'waiting') {
-        // Listen for room creation
-        console.log('⏳ Waiting for match... Subscribing to pvp_rooms for player1_id=' + userId);
-        const channel = supabase.channel('matchmaking_' + userId)
-          .on('postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'pvp_rooms', filter: `player1_id=eq.${userId}` },
-            async (payload) => {
-              console.log('✅ Match created Event Received!', payload);
-              const newRoom = payload.new as PvPRoom;
-
-              // Important: Unsubscribe first and WAIT
-              // This prevents socket contention which causes TIMED_OUT on the next subscribe
-              await supabase.removeChannel(channel);
-              console.log('Matchmaking channel removed, switching to game room...');
-
-              // Helper to delay state update slightly to allow socket cleanup
-              setTimeout(() => {
-                setMyRole('player1');
-                setRoomId(newRoom.id);
-                setPvpState('matched');
-                setStatus('MATCH FOUND!');
-
-                // Then update room data
-                handleRoomUpdate(newRoom);
-              }, 100);
-            }
-          )
-          .subscribe((status) => console.log('Matchmaking subscription status:', status));
+      // Error
+      clearInterval(timer);
+      setStatus('ERROR');
+      setPvpState('idle');
+      if (matchmakingChannelRef.current) {
+        await supabase.removeChannel(matchmakingChannelRef.current);
+        matchmakingChannelRef.current = null;
       }
     }
   };
 
   const handleCancelSearch = async () => {
     if (!userId) return;
-    await cancelMatchmaking(userId);
+
+    if (matchmakingChannelRef.current) {
+      await supabase.removeChannel(matchmakingChannelRef.current);
+      matchmakingChannelRef.current = null;
+    }
+
+    await cancelWordBlitzMatchmaking(userId);
     setPvpState('idle');
     setStatus('CANCELLED');
   };
 
-  // 2. Game Loop Subscription
-  // 2. Game Loop Subscription
+  // 2. Game Loop Subscription & Initial Fetch
   useEffect(() => {
-    if (!roomId) return;
+    if (!roomId || !myRole) return;
 
     let activeChannel: any = null;
     let retryTimeout: any = null;
+    let isMounted = true;
+
+    const fetchAndSubscribe = async () => {
+      // 2.1 Fetch Initial State (Guarantees fresh state vs manual call)
+      try {
+        const { data, error } = await supabase.from('pvp_word_blitz_rooms').select('*').eq('id', roomId).single();
+        if (error) throw error;
+        if (data && isMounted) {
+          console.log('📥 Initial Room State:', data);
+          handleRoomUpdate(data as PvPRoom);
+        }
+      } catch (err) {
+        console.error('Error fetching initial room state:', err);
+      }
+
+      // 2.2 Subscribe
+      if (!isMounted) return;
+      subscribeToGame();
+    };
 
     const subscribeToGame = () => {
       console.log(`🔌 Connecting to Game Room: ${roomId}`);
       const channel = supabase.channel('game_' + roomId)
         .on('postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'pvp_rooms', filter: `id=eq.${roomId}` },
+          { event: 'UPDATE', schema: 'public', table: 'pvp_word_blitz_rooms', filter: `id=eq.${roomId}` },
           (payload) => {
             console.log('📥 Game Update Received:', payload.new);
             handleRoomUpdate(payload.new as PvPRoom);
@@ -168,38 +230,39 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
         .subscribe((status, err) => {
           console.log(`Game Room Subscription Status (${roomId}):`, status, err);
 
-          if (status === 'TIMED_OUT') {
-            console.warn(`⚠️ Subscription timed out for room ${roomId}. Retrying in 2s...`);
-            // Clean up this failed attempt
-            supabase.removeChannel(channel);
-            // Retry
-            retryTimeout = setTimeout(subscribeToGame, 2000);
+          if (status === 'SUBSCRIBED') {
+            setIsGameConnected(true);
+          } else {
+            setIsGameConnected(false);
           }
-          if (status === 'CHANNEL_ERROR') {
-            console.warn(`⚠️ Subscription channel error. Retrying...`);
+
+          if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR') {
+            console.warn(`⚠️ Subscription issue: ${status}. Retrying...`);
             supabase.removeChannel(channel);
-            retryTimeout = setTimeout(subscribeToGame, 2000);
+            setIsGameConnected(false);
+            if (isMounted) retryTimeout = setTimeout(subscribeToGame, 2000);
           }
         });
 
       activeChannel = channel;
     };
 
-    subscribeToGame();
+    fetchAndSubscribe();
 
     return () => {
+      isMounted = false;
       console.log(`🧹 Cleaning up game subscription for ${roomId}`);
       if (activeChannel) supabase.removeChannel(activeChannel);
       if (retryTimeout) clearTimeout(retryTimeout);
     };
-  }, [roomId]);
+  }, [roomId, myRole]); // Run when we have room AND role
 
-  // 2.5 Fetch Opponent (Separate Effect)
+  // 2.5 Fetch Opponent (Separate Effect) - Can be merged but keeping separate is fine
   useEffect(() => {
     if (!roomId || !myRole) return;
 
     const fetchOpponent = async () => {
-      const { data } = await supabase.from('pvp_rooms').select('player1_id, player2_id').eq('id', roomId).single();
+      const { data } = await supabase.from('pvp_word_blitz_rooms').select('player1_id, player2_id').eq('id', roomId).single();
       if (data) {
         const oppId = myRole === 'player1' ? data.player2_id : data.player1_id;
         const profile = await getOpponentProfile(oppId);
@@ -315,7 +378,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
 
     // Logic: If correct -> dmg = timeRemaining. If wrong -> self dmg = timeRemaining.
     // Database takes: (roomId, userId, qIndex, isCorrect, timeRemaining)
-    await submitAnswer(roomId, userId, currentQIndex, correct, timeRemaining);
+    await submitWordBlitzAnswer(roomId, userId, currentQIndex, correct, timeRemaining);
   };
 
   const handleChoice = (option: string) => {
@@ -545,7 +608,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
                     <button
                       key={`${currentQIndex}-${idx}`}
                       onClick={() => handleChoice(opt)}
-                      disabled={hasAnsweredCurrent}
+                      disabled={hasAnsweredCurrent || !isGameConnected}
                       className="p-4 md:p-8 dark:bg-slate-950 bg-slate-50 border-2 dark:border-slate-800 border-slate-200 rounded-2xl md:rounded-3xl hover:border-indigo-500 font-bold text-xs md:text-base transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {opt}
@@ -555,6 +618,10 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
               </>
             ) : (
               <div className="text-slate-500 font-bold animate-pulse">Loading Question...</div>
+            )}
+
+            {!isGameConnected && (
+              <div className="text-xs font-black uppercase tracking-widest text-indigo-500 animate-pulse">Connecting to Live Server...</div>
             )}
 
           </div>

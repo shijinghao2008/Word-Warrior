@@ -23,9 +23,9 @@ export type JoinStatus = 'matched' | 'waiting' | 'error';
  * Attempts to join a PvP match.
  * Returns match status and room data if matched.
  */
-export const findMatch = async (userId: string): Promise<{ status: JoinStatus; roomId?: string; role?: 'player1' | 'player2' }> => {
+export const findWordBlitzMatch = async (userId: string): Promise<{ status: JoinStatus; roomId?: string; role?: 'player1' | 'player2' }> => {
     try {
-        const { data, error } = await supabase.rpc('join_pvp_queue', { p_user_id: userId });
+        const { data, error } = await supabase.rpc('join_pvp_word_blitz_queue', { p_user_id: userId });
 
         if (error) {
             console.error('Error joining PvP queue:', error);
@@ -42,22 +42,22 @@ export const findMatch = async (userId: string): Promise<{ status: JoinStatus; r
 /**
  * Cancels matchmaking
  */
-export const cancelMatchmaking = async (userId: string) => {
-    const { error } = await supabase.rpc('leave_pvp_queue', { p_user_id: userId });
+export const cancelWordBlitzMatchmaking = async (userId: string) => {
+    const { error } = await supabase.rpc('leave_pvp_word_blitz_queue', { p_user_id: userId });
     if (error) console.error('Error leaving queue:', error);
 };
 
 /**
  * Submit an answer to the current question
  */
-export const submitAnswer = async (
+export const submitWordBlitzAnswer = async (
     roomId: string,
     userId: string,
     questionIndex: number,
     isCorrect: boolean,
     timeLeft: number
 ) => {
-    const { error } = await supabase.rpc('submit_pvp_answer', {
+    const { error } = await supabase.rpc('submit_pvp_word_blitz_answer', {
         p_room_id: roomId,
         p_user_id: userId,
         p_question_index: questionIndex,
