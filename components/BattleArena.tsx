@@ -292,11 +292,13 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
     setPlayerHp(myIdsHp);
     setEnemyHp(oppIdsHp);
 
-    // Only set questions if we don't have them or they changed (rare)
-    if (room.questions && (!questions || questions.length === 0)) {
+    // Sync Questions (Append only logic)
+    // If server has more questions than us, update local questions
+    if (room.questions && room.questions.length > questions.length) {
+      console.log(`📜 Received new questions! Old: ${questions.length}, New: ${room.questions.length}`);
       setQuestions(room.questions);
-    } else if (room.questions && room.questions.length > 0 && questions.length === 0) {
-      // fallback
+    } else if (questions.length === 0 && room.questions && room.questions.length > 0) {
+      // First load
       setQuestions(room.questions);
     }
 
@@ -313,42 +315,47 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
       return;
     }
 
-    // Sync Question
+    // Sync Question Index
     // We compare with Ref to ensure we catch the change even if closure is stale
     if (room.current_question_index !== current.currentQIndex) {
       console.log(`🔄 Next Question: ${current.currentQIndex} -> ${room.current_question_index}`);
-      // New Question!
+
       setCurrentQIndex(room.current_question_index);
       setHasAnsweredCurrent(false);
       setTimeLeft(10); // Reset timer
 
-      const q = room.questions ? room.questions[room.current_question_index] : null;
+      // Check if we actually HAVE this question yet
+      // Because update might come before the questions array update via Postgres partials? 
+      // Actually we send the whole row usually.
 
-      // Access questions from state if passed or from 'questions' state? 
-      // 'questions' state might be stale here too? 
-      // Actually 'questions' doesn't change after load, so usually fine.
-      // But safer to use room.questions if provided, or fallback to the prop if we stored it?
-      // Since room.questions is on the room object, we can use it directly.
+      // But if we are at index 10 (size 10), and questions array is size 10 (0..9). 
+      // Then we are waiting for questions update.
+      const currentList = (room.questions && room.questions.length > questions.length) ? room.questions : questions;
+      const q = currentList[room.current_question_index];
+
       if (q) {
         setShuffledOptions([...q.options].sort(() => Math.random() - 0.5));
+        setPvpState('playing');
+        setStatus('V.S.');
+      } else {
+        // Question not here yet! UI Lock.
+        console.warn('⚠️ Current question index out of bounds, waiting for question data...');
+        setStatus('LOADING NEXT ROUND...');
+        // We do NOT set pvpState to 'playing' here to prevent timer start etc.
+        // Or we set it but UI disables interaction.
       }
-
-      setPvpState('playing');
-      setStatus('V.S.');
     }
 
     // If first load/Start
     if (current.currentQIndex === 0 && room.current_question_index === 0 && pvpState !== 'playing' && room.questions && room.questions.length > 0) {
       // Initialize First Question
-      if (!current.hasAnswered) { // Prevent reset if we already answered 0? No, pvpState check handles it.
+      if (!current.hasAnswered) {
         const q = room.questions[0];
         setShuffledOptions([...q.options].sort(() => Math.random() - 0.5));
         setPvpState('playing');
         setStatus('V.S.');
       }
     }
-
-    // Fallback: If we are in 'playing' but question options are empty?
   };
 
   // 4. Timer Logic

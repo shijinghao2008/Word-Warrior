@@ -25,7 +25,50 @@ CREATE TABLE IF NOT EXISTS pvp_word_blitz_rooms (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- 3. Matchmaking Function
+-- 3. Helper: Generate Functions
+CREATE OR REPLACE FUNCTION generate_pvp_word_blitz_questions(p_limit INTEGER)
+RETURNS JSONB
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_questions JSONB;
+BEGIN
+    WITH candidate_words AS (
+        SELECT * FROM words 
+        WHERE translation IS NOT NULL AND translation != ''
+        ORDER BY random() 
+        LIMIT p_limit
+    ),
+    questions_with_distractors AS (
+        SELECT 
+            cw.word,
+            cw.translation as correct_answer,
+            (
+                SELECT jsonb_agg(d.translation)
+                FROM (
+                    SELECT translation 
+                    FROM words 
+                    WHERE translation IS NOT NULL AND translation != '' AND id != cw.id
+                    ORDER BY random() 
+                    LIMIT 3
+                ) d
+            ) as distractors
+        FROM candidate_words cw
+    )
+    SELECT jsonb_agg(
+        jsonb_build_object(
+            'word', q.word,
+            'correctAnswer', q.correct_answer,
+            'options', q.distractors || jsonb_build_array(q.correct_answer) -- Client should shuffle, but we can relies on client shuffle or do it here? JSON arrays are ordered. Client shuffles.
+        )
+    ) INTO v_questions
+    FROM questions_with_distractors q;
+
+    RETURN v_questions;
+END;
+$$;
+
+-- 4. Matchmaking Function
 -- Attempts to find a match in the queue. If found, creates a room. If not, adds user to queue.
 CREATE OR REPLACE FUNCTION join_pvp_word_blitz_queue(p_user_id UUID)
 RETURNS JSONB
@@ -53,38 +96,8 @@ BEGIN
     IF v_opponent_id IS NOT NULL THEN
         -- Match Found!
         
-        -- Generate 10 Questions
-        -- Select 10 random words with translations
-        WITH candidate_words AS (
-            SELECT * FROM words 
-            WHERE translation IS NOT NULL AND translation != ''
-            ORDER BY random() 
-            LIMIT 10
-        ),
-        questions_with_distractors AS (
-            SELECT 
-                cw.word,
-                cw.translation as correct_answer,
-                (
-                    SELECT jsonb_agg(d.translation)
-                    FROM (
-                        SELECT translation 
-                        FROM words 
-                        WHERE translation IS NOT NULL AND translation != '' AND id != cw.id
-                        ORDER BY random() 
-                        LIMIT 3
-                    ) d
-                ) as distractors
-            FROM candidate_words cw
-        )
-        SELECT jsonb_agg(
-            jsonb_build_object(
-                'word', q.word,
-                'correctAnswer', q.correct_answer,
-                'options', q.distractors || jsonb_build_array(q.correct_answer) -- Client will shuffle
-            )
-        ) INTO v_questions
-        FROM questions_with_distractors q;
+        -- Generate 10 Questions using helper
+        v_questions := generate_pvp_word_blitz_questions(10);
 
         -- Create Room
         INSERT INTO pvp_word_blitz_rooms (player1_id, player2_id, questions)
@@ -110,7 +123,7 @@ BEGIN
 END;
 $$;
 
--- 4. Submit Answer Function
+-- 5. Submit Answer Function
 -- atomic game state update
 CREATE OR REPLACE FUNCTION submit_pvp_word_blitz_answer(
     p_room_id UUID,
@@ -129,6 +142,8 @@ DECLARE
     v_p2_hp INTEGER;
     v_new_status TEXT := 'active';
     v_winner_id UUID := NULL;
+    v_new_questions JSONB;
+    v_total_questions INTEGER;
 BEGIN
     -- Lock room for update
     SELECT * INTO v_room FROM pvp_word_blitz_rooms WHERE id = p_room_id FOR UPDATE;
@@ -157,41 +172,49 @@ BEGIN
         END IF;
     END IF;
 
-    -- Check Game Over
+    -- Check Game Over (Only HP based now)
     IF v_p1_hp <= 0 THEN
         v_new_status := 'finished';
         v_winner_id := v_room.player2_id;
     ELSIF v_p2_hp <= 0 THEN
         v_new_status := 'finished';
         v_winner_id := v_room.player1_id;
-    ELSIF v_room.current_question_index >= (jsonb_array_length(v_room.questions) - 1) THEN
-         -- All questions done, who has more HP?
-         v_new_status := 'finished';
-         IF v_p1_hp > v_p2_hp THEN
-             v_winner_id := v_room.player1_id;
-         ELSIF v_p2_hp > v_p1_hp THEN
-             v_winner_id := v_room.player2_id;
-         ELSE
-             -- Draw?
-             v_winner_id := NULL;
-         END IF;
     END IF;
-
-    -- Update Room
-    UPDATE pvp_word_blitz_rooms 
-    SET 
-        player1_hp = v_p1_hp,
-        player2_hp = v_p2_hp,
-        current_question_index = CASE WHEN v_new_status = 'active' THEN current_question_index + 1 ELSE current_question_index END,
-        status = v_new_status,
-        winner_id = v_winner_id,
-        updated_at = NOW()
-    WHERE id = p_room_id;
+    
+    -- Check if we need more questions (Endless Mode)
+    -- If we just answered the last question in the array
+    v_total_questions := jsonb_array_length(v_room.questions);
+    
+    IF v_new_status = 'active' AND p_question_index >= (v_total_questions - 1) THEN
+        -- Generate 10 more!
+        v_new_questions := generate_pvp_word_blitz_questions(10);
+        
+        -- Update Room with appended questions
+        UPDATE pvp_word_blitz_rooms 
+        SET 
+            player1_hp = v_p1_hp,
+            player2_hp = v_p2_hp,
+            current_question_index = current_question_index + 1,
+            questions = questions || v_new_questions, -- Append
+            updated_at = NOW()
+        WHERE id = p_room_id;
+    ELSE
+        -- Normal update
+        UPDATE pvp_word_blitz_rooms 
+        SET 
+            player1_hp = v_p1_hp,
+            player2_hp = v_p2_hp,
+            current_question_index = CASE WHEN v_new_status = 'active' THEN current_question_index + 1 ELSE current_question_index END,
+            status = v_new_status,
+            winner_id = v_winner_id,
+            updated_at = NOW()
+        WHERE id = p_room_id;
+    END IF;
 
 END;
 $$;
 
--- 5. Helper to cancel matchmaking
+-- 6. Helper to cancel matchmaking
 CREATE OR REPLACE FUNCTION leave_pvp_word_blitz_queue(p_user_id UUID)
 RETURNS VOID
 LANGUAGE plpgsql
@@ -201,7 +224,7 @@ BEGIN
 END;
 $$;
 
--- 6. Setup Realtime & Security
+-- 7. Setup Realtime & Security
 -- Ensure Realtime is enabled for these tables
 -- Force Replica Identity to ensure we get proper Update events
 ALTER TABLE pvp_word_blitz_queue REPLICA IDENTITY FULL;
