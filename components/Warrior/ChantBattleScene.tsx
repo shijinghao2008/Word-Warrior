@@ -17,7 +17,7 @@ interface BattleSceneProps {
     combatEvent: { type: 'attack' | 'hit' | 'block'; target: 'player' | 'enemy'; damage?: number } | null;
 }
 
-const BattleScene: React.FC<BattleSceneProps> = ({ playerIds, enemyIds, combatEvent }) => {
+const ChantBattleScene: React.FC<BattleSceneProps> = ({ playerIds, enemyIds, combatEvent }) => {
     const gameRef = useRef<Phaser.Game | null>(null);
     const parentEl = useRef<HTMLDivElement>(null);
     const sceneRef = useRef<Phaser.Scene | null>(null);
@@ -252,8 +252,6 @@ const BattleScene: React.FC<BattleSceneProps> = ({ playerIds, enemyIds, combatEv
         return container;
     }
 
-    // Removed legacy drawWarriorGraphics / drawWeapon
-
     function createSlashEffect(scene: Phaser.Scene, x: number, y: number, color: number) {
         const slash = scene.add.graphics({ x, y });
         slash.lineStyle(4, color, 1);
@@ -275,4 +273,4 @@ const BattleScene: React.FC<BattleSceneProps> = ({ playerIds, enemyIds, combatEv
     return <div ref={parentEl} className="w-full h-[300px] md:h-[400px] overflow-hidden rounded-3xl" />;
 };
 
-export default BattleScene;
+export default ChantBattleScene;

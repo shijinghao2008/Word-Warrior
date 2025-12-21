@@ -202,6 +202,33 @@ export const MOCK_GRAMMAR_QUESTIONS = [
   }
 ];
 
+export const MOCK_CHANT_QUESTIONS = [
+  {
+    prompt: "知识就是力量",
+    options: ["Knowledge is power", "Wisdom is strength", "Learning is fast", "Books are heavy"],
+    correctAnswer: "Knowledge is power",
+    type: "translation"
+  },
+  {
+    prompt: "欲速则不达",
+    options: ["Haste makes waste", "Speed is key", "Slow is bad", "Time is money"],
+    correctAnswer: "Haste makes waste",
+    type: "translation"
+  },
+  {
+    prompt: "患难见真情",
+    options: ["A friend in need is a friend indeed", "Bad times bring good friends", "Love is blind", "Truth hurts"],
+    correctAnswer: "A friend in need is a friend indeed",
+    type: "translation"
+  },
+  {
+    prompt: "条条大路通罗马",
+    options: ["All roads lead to Rome", "Rome is beautiful", "Walking is healthy", "Maps are useful"],
+    correctAnswer: "All roads lead to Rome",
+    type: "translation"
+  }
+];
+
 export const MOCK_QUESTIONS = [
   {
     id: 'q1',

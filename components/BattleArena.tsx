@@ -3,12 +3,13 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, Shield, User, Zap, Flame, Sword, Target, ShieldCheck, Loader2, XCircle } from 'lucide-react';
 import { startLiveSession, encodeAudio, resampleAudio } from '../services/liveService';
-import { MOCK_GRAMMAR_QUESTIONS, MOCK_VOCAB_CARDS } from '../constants.tsx';
+import { MOCK_GRAMMAR_QUESTIONS, MOCK_VOCAB_CARDS, MOCK_CHANT_QUESTIONS } from '../constants.tsx';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useWarrior } from '../contexts/WarriorContext';
 import { soundService } from '../services/soundService';
 import BattleScene from './Warrior/BattleScene';
+import ChantBattleScene from './Warrior/ChantBattleScene';
 import { supabase } from '../services/supabaseClient';
 import { findWordBlitzMatch, cancelWordBlitzMatchmaking, submitWordBlitzAnswer, getOpponentProfile, PvPRoom } from '../services/pvpService';
 import { findGrammarMatch, cancelGrammarMatchmaking, submitGrammarAnswer } from '../services/grammarPvpService';
@@ -72,7 +73,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
 
   // Initial Setup & Cleanup
   useEffect(() => {
-    if (mode === 'pvp_blitz' || mode === 'pvp_tactics') {
+    if (mode === 'pvp_blitz' || mode === 'pvp_tactics' || mode === 'pvp_chant') {
       setPvpState('idle');
     }
     return () => {
@@ -100,6 +101,11 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
     setStatus('SEARCHING...');
     setPvpState('searching');
     setSearchingTime(0);
+
+    if (mode === 'pvp_chant') {
+      setTimeout(() => startAiMatch(), 1500);
+      return;
+    }
 
     // Timer for UI only - Modified to trigger AI
     const timer = setInterval(() => {
@@ -254,8 +260,12 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
     console.log('🤖 Starting AI Match...');
     await cancelSearchImpl(true);
 
-    const isGrammar = mode === 'pvp_tactics';
-    const mockQuestions = isGrammar ? MOCK_GRAMMAR_QUESTIONS : MOCK_VOCAB_CARDS;
+    await cancelSearchImpl(true);
+
+    let mockQuestions;
+    if (mode === 'pvp_tactics') mockQuestions = MOCK_GRAMMAR_QUESTIONS;
+    else if (mode === 'pvp_chant') mockQuestions = MOCK_CHANT_QUESTIONS;
+    else mockQuestions = MOCK_VOCAB_CARDS;
 
     // Shuffle questions
     const selectedQuestions = [...mockQuestions]
@@ -608,7 +618,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
     // Trigger Visual Event
     setCombatEvent({
       type: type === 'block' ? 'block' : 'attack',
-      target: target === 'player' ? 'enemy' : 'player', // The attacker is the opposite of the damage target
+      target: target, // The target in combatEvent IS the victim 
       damage: val
     });
     // Reset event after short animation time
@@ -703,15 +713,15 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
   // ============================================
   // RENDER - MATCHMAKING SCREEN
   // ============================================
-  if ((mode === 'pvp_blitz' || mode === 'pvp_tactics') && (pvpState === 'idle' || pvpState === 'searching')) {
+  if ((mode === 'pvp_blitz' || mode === 'pvp_tactics' || mode === 'pvp_chant') && (pvpState === 'idle' || pvpState === 'searching')) {
     return (
       <div className="h-full flex flex-col items-center justify-center p-8 space-y-8">
         <div className="text-center space-y-2">
           <h1 className="text-4xl md:text-6xl font-black rpg-font italic tracking-tighter text-indigo-500">
-            {mode === 'pvp_tactics' ? 'GRAMMAR STRONGHOLD' : 'BATTLE ARENA'}
+            {mode === 'pvp_tactics' ? 'GRAMMAR STRONGHOLD' : mode === 'pvp_chant' ? 'CHANT DUEL' : 'BATTLE ARENA'}
           </h1>
           <p className="text-xs font-black uppercase tracking-[0.5em] text-slate-400">
-            {mode === 'pvp_tactics' ? 'PvP Grammar Tactics' : 'PvP Vocabulary Blitz'}
+            {mode === 'pvp_tactics' ? 'PvP Grammar Tactics' : mode === 'pvp_chant' ? 'PvP Translation Duel' : 'PvP Vocabulary Blitz'}
           </p>
         </div>
 
@@ -770,7 +780,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
 
         <div className="flex flex-col items-center opacity-80 shrink-0">
           <div className={`text-2xl font-black rpg-font ${timeLeft <= 3 ? 'text-red-500 animate-pulse' : 'text-slate-400'}`}>
-            {mode === 'pvp_blitz' || mode === 'pvp_tactics' ? timeLeft : '∞'}
+            {mode === 'pvp_blitz' || mode === 'pvp_tactics' || mode === 'pvp_chant' ? timeLeft : '∞'}
           </div>
           <span className="text-[10px] md:text-xs font-black rpg-font text-slate-500">VS</span>
         </div>
@@ -779,7 +789,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
           <div className="flex items-center gap-2 md:gap-4 mb-2 md:mb-3 justify-end">
             <div className="overflow-hidden text-right">
               <p className="text-[8px] md:text-[10px] font-black uppercase tracking-widest text-slate-500 truncate">
-                {mode === 'pvp_blitz' || mode === 'pvp_tactics' ? opponentName : 'WRAITH'}
+                {mode === 'pvp_blitz' || mode === 'pvp_tactics' || mode === 'pvp_chant' ? opponentName : 'WRAITH'}
               </p>
               <p className="rpg-font text-base md:text-2xl font-black leading-none">{enemyHp} HP</p>
             </div>
@@ -795,16 +805,29 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
 
       {/* BATTLE SCENE */}
       <div className="relative w-full max-w-3xl mx-auto -mt-4 mb-4 z-0">
-        <BattleScene
-          playerIds={{
-            skinColor: warriorState.appearance.skinColor,
-            hairColor: warriorState.appearance.hairColor,
-            armorId: warriorState.equipped.armor || 'default',
-            weaponId: warriorState.equipped.weapon || 'default'
-          }}
-          enemyIds={enemyAppearance}
-          combatEvent={combatEvent}
-        />
+        {mode === 'pvp_chant' ? (
+          <ChantBattleScene
+            playerIds={{
+              skinColor: warriorState.appearance.skinColor,
+              hairColor: warriorState.appearance.hairColor,
+              armorId: warriorState.equipped.armor || 'default',
+              weaponId: warriorState.equipped.weapon || 'default'
+            }}
+            enemyIds={enemyAppearance}
+            combatEvent={combatEvent}
+          />
+        ) : (
+          <BattleScene
+            playerIds={{
+              skinColor: warriorState.appearance.skinColor,
+              hairColor: warriorState.appearance.hairColor,
+              armorId: warriorState.equipped.armor || 'default',
+              weaponId: warriorState.equipped.weapon || 'default'
+            }}
+            enemyIds={enemyAppearance}
+            combatEvent={combatEvent}
+          />
+        )}
       </div>
 
       <div className="flex-1 mx-2 md:mx-4 dark:bg-slate-900/30 bg-white border dark:border-slate-800 border-slate-200 rounded-[2.5rem] md:rounded-[3rem] p-6 md:p-12 flex flex-col items-center justify-center relative shadow-2xl backdrop-blur-sm overflow-hidden min-h-[300px]">
@@ -893,16 +916,39 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
         )}
 
         {mode === 'pvp_chant' && (
-          /* ... Preserved Chant UI ... */
-          <div className="space-y-8 md:space-y-12 text-center w-full max-w-xl px-6 md:px-0">
-            <h2 className="text-xl md:text-4xl font-black rpg-font italic leading-relaxed px-4 dark:text-white text-slate-900">
-              "在这片充满未知的土地上，唯有知识能驱散永恒的黑暗。"
-            </h2>
-            <div className="py-12">
-              <div className="text-xs md:text-sm font-black uppercase tracking-[0.4em] text-slate-500 animate-pulse">{status}</div>
+          <div className="space-y-6 md:space-y-12 w-full max-w-2xl text-center px-6 md:px-0">
+            <div className="space-y-2">
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-cyan-500">Translation Challenge</span>
+              <motion.h2
+                key={questions[currentQIndex]?.prompt || 'loading'}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-lg md:text-3xl font-bold dark:text-white text-slate-900 px-4 leading-relaxed italic"
+              >
+                {questions[currentQIndex]?.prompt || (status === 'READY' ? 'Ready...' : 'Loading Question...')}
+              </motion.h2>
             </div>
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
+              {questions[currentQIndex]?.options?.map((opt: string) => (
+                <button
+                  key={opt}
+                  onClick={() => handleChoice(opt)}
+                  disabled={hasAnsweredCurrent || !isGameConnected}
+                  className="p-4 md:p-6 dark:bg-slate-950 bg-slate-50 border-2 dark:border-slate-800 border-slate-200 rounded-2xl md:rounded-3xl hover:border-cyan-500 font-bold text-xs md:text-lg transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {opt}
+                </button>
+              )) || (
+                  <div className="col-span-2 text-slate-500 animate-pulse">Waiting for server...</div>
+                )}
+            </div>
+            {!isGameConnected && (
+              <div className="text-xs font-black uppercase tracking-widest text-indigo-500 animate-pulse">Connecting to Live Server...</div>
+            )}
           </div>
         )}
+
+
       </div>
 
       <div className="flex justify-center gap-6 md:gap-16 text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-500 pb-24 md:pb-8">
@@ -911,26 +957,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
         <div className="flex items-center gap-1.5"><Zap size={10} /> CRIT: {Math.round(playerStats.crit * 100)}%</div>
       </div>
 
-      {mode === 'pvp_chant' && (
-        <div className="fixed z-[150] flex flex-col items-center gap-4 right-6 bottom-32 md:right-12 md:bottom-[140px]">
-          <div className="flex flex-col items-center gap-4">
-            {/* ... preserved mic button ... */}
-            <motion.button
-              onMouseDown={startChant}
-              onMouseUp={stopChant}
-              onTouchStart={startChant}
-              onTouchEnd={stopChant}
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className={`group relative w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center transition-all shadow-[0_15px_40px_rgba(0,0,0,0.4)] border-4 border-white dark:border-slate-900 ${isRecording ? 'bg-red-600' :
-                `${getColorClass('bg', 600)} shadow-lg shadow-${primaryColor}-500/40`
-                }`}
-            >
-              <Mic size={28} className="text-white" />
-            </motion.button>
-          </div>
-        </div>
-      )}
+
 
 
 
