@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sun, Moon, Zap, Trophy, Shield, User, ChevronRight, LayoutGrid, Star, Flame, Target, BookOpen, Swords, Mic2, Headphones, PenTool, ShieldCheck, LogOut, ShoppingBag } from 'lucide-react';
+import { X, Zap, Trophy, Shield, User, ChevronRight, LayoutGrid, Star, Flame, Target, BookOpen, Swords, Mic2, Headphones, PenTool, ShieldCheck, ShoppingBag } from 'lucide-react';
 import { INITIAL_STATS, NAVIGATION, TRAINING_MODES, PVP_MODES } from './constants.tsx';
 import { UserStats, Rank } from './types';
 import { getUserStats, updateUserStats, addMasteredWord } from './services/databaseService';
@@ -48,8 +48,8 @@ interface AuthenticatedAppProps {
 }
 
 const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
-  const { signOut, user } = useAuth();
-  const { themeMode, toggleTheme, isDarkMode, getColorClass, primaryColor } = useTheme(); // Use Theme Context
+  const { user } = useAuth();
+  const { themeMode, getColorClass, primaryColor } = useTheme(); // Use Theme Context
 
   const [stats, setStats] = useState<UserStats>(() => {
     const saved = localStorage.getItem(`ww_stats_${userId}`);
