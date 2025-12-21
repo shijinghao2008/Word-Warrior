@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sun, Moon, Zap, Trophy, Shield, User, ChevronRight, LayoutGrid, Star, Flame, Target, BookOpen, Swords, Mic2, Headphones, PenTool, ShieldCheck, LogOut } from 'lucide-react';
+import { X, Sun, Moon, Zap, Trophy, Shield, User, ChevronRight, LayoutGrid, Star, Flame, Target, BookOpen, Swords, Mic2, Headphones, PenTool, ShieldCheck, LogOut, ShoppingBag } from 'lucide-react';
 import { INITIAL_STATS, NAVIGATION, TRAINING_MODES, PVP_MODES } from './constants.tsx';
 import { UserStats, Rank } from './types';
 import { getUserStats, updateUserStats, addMasteredWord } from './services/databaseService';
@@ -20,8 +20,11 @@ import BattleArena from './components/BattleArena';
 import AdminPanel from './components/AdminPanel';
 import Leaderboard from './components/Leaderboard';
 import AchievementsPanel from './components/AchievementsPanel';
+import ShopPanel from './components/Shop/ShopPanel';
+import CustomizerPanel from './components/Shop/CustomizerPanel';
 
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { WarriorProvider } from './contexts/WarriorContext';
 
 const App: React.FC = () => {
   const { user, loading } = useAuth();
@@ -31,7 +34,9 @@ const App: React.FC = () => {
 
   return (
     <ThemeProvider>
-      <AuthenticatedApp userId={user.id} />
+      <WarriorProvider>
+        <AuthenticatedApp userId={user.id} />
+      </WarriorProvider>
     </ThemeProvider>
   );
 };
@@ -175,13 +180,34 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
     );
   };
 
+  const [showShop, setShowShop] = useState(false);
+  const [showCustomizer, setShowCustomizer] = useState(false);
+
+  // ... (keep renderScholarPath)
+
   const renderProfile = () => (
     <div className="max-w-xl mx-auto space-y-8 pt-4 px-4 pb-32">
       {/* 1. Main Stats */}
       <div className="space-y-4">
-        <div className="flex items-center gap-2 mb-2">
-          <User size={16} className="text-slate-400" />
-          <h2 className="text-[12px] font-black uppercase tracking-widest text-slate-500">战士档案 (Warrior Profile)</h2>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <User size={16} className="text-slate-400" />
+            <h2 className="text-[12px] font-black uppercase tracking-widest text-slate-500">战士档案 (Warrior Profile)</h2>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowCustomizer(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-wider"
+            >
+              <PenTool size={12} /> Customize
+            </button>
+            <button
+              onClick={() => setShowShop(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-500 hover:bg-amber-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-wider"
+            >
+              <ShoppingBag size={12} /> Armory
+            </button>
+          </div>
         </div>
         <div className="dark:bg-slate-900/40 bg-white p-6 rounded-[2.5rem] border dark:border-slate-800 border-slate-200 shadow-xl backdrop-blur-sm">
           <StatsPanel stats={stats} username={user?.user_metadata?.username || 'Word Warrior'} />
@@ -202,6 +228,20 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
           系统设置 & 管理
         </button>
       </div>
+
+      <AnimatePresence>
+        {showShop && <ShopPanel onClose={() => setShowShop(false)} />}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showCustomizer && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowCustomizer(false)}>
+            <div onClick={e => e.stopPropagation()}>
+              <CustomizerPanel onClose={() => setShowCustomizer(false)} />
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 

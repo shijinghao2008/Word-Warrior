@@ -214,3 +214,62 @@ export const MOCK_QUESTIONS = [
   },
   ...MOCK_GRAMMAR_QUESTIONS.map((q, idx) => ({ ...q, id: `g${idx}`, difficulty: 1 }))
 ];
+
+export const SHOP_ITEMS: import('./types').ShopItem[] = [
+  // Weapons
+  {
+    id: 'wpn_wood_sword',
+    name: '训练木剑',
+    type: 'weapon',
+    price: 50,
+    statBonus: { atk: 2 },
+    description: '一把简单的木剑，适合新手。',
+    assetKey: 'weapon_wood'
+  },
+  {
+    id: 'wpn_iron_sword',
+    name: '精铁长剑',
+    type: 'weapon',
+    price: 200,
+    statBonus: { atk: 5 },
+    description: '铁匠精心打造的长剑，锋利无比。',
+    assetKey: 'weapon_iron'
+  },
+  {
+    id: 'wpn_flame_blade',
+    name: '火焰之刃',
+    type: 'weapon',
+    price: 1000,
+    statBonus: { atk: 15, crit: 0.05 },
+    description: '蕴含火焰魔力的魔法剑。',
+    assetKey: 'weapon_fire'
+  },
+  // Armor
+  {
+    id: 'arm_leather',
+    name: '皮甲',
+    type: 'armor',
+    price: 50,
+    statBonus: { def: 2, hp: 10 },
+    description: '轻便的皮甲，提供基础防护。',
+    assetKey: 'armor_leather'
+  },
+  {
+    id: 'arm_iron',
+    name: '铁甲',
+    type: 'armor',
+    price: 250,
+    statBonus: { def: 8, hp: 50 },
+    description: '坚固的铁甲，此时你感觉自己是个真正的战士。',
+    assetKey: 'armor_iron'
+  },
+  {
+    id: 'arm_golden',
+    name: '黄金战甲',
+    type: 'armor',
+    price: 2000,
+    statBonus: { def: 20, hp: 200 },
+    description: '闪耀着金光的传说盔甲。',
+    assetKey: 'armor_gold'
+  }
+];

@@ -106,3 +106,33 @@ export interface ReadingMaterial {
   difficulty: '小学' | '初中' | '高中';
   questions: ReadingQuestion[];
 }
+
+// Warrior System Types
+export interface WarriorAppearance {
+  skinColor: string; // hex
+  hairColor: string; // hex
+  hairStyle: 'default' | 'messy' | 'topknot' | 'bald';
+  eyeColor: string;
+}
+
+export type ItemType = 'armor' | 'weapon';
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  type: ItemType;
+  price: number;
+  statBonus: { atk?: number; def?: number; hp?: number; crit?: number };
+  description: string;
+  assetKey: string; // for Phaser
+}
+
+export interface WarriorState {
+  gold: number;
+  inventory: string[]; // item IDs
+  equipped: {
+    armor: string | null;
+    weapon: string | null;
+  };
+  appearance: WarriorAppearance;
+}
