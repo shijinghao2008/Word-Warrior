@@ -4,32 +4,57 @@ import { GoogleGenAI, Type, Modality } from "@google/genai";
 // Use process.env.API_KEY directly as per SDK guidelines
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-export const gradeWriting = async (topic: string, content: string) => {
+export const gradeWriting = async (topic: string, content: string, difficulty: string) => {
   const ai = getAI();
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
-    contents: `Please grade this English writing task based on grammar, vocabulary, and coherence (IELTS/TOEFL standard).
+    contents: `Please grade this English writing task based on grammar, vocabulary, and content.
     Topic: ${topic}
+    Difficulty Level: ${difficulty}
     Student Content: ${content}`,
     config: {
-      systemInstruction: "你是一位资深的雅思/托福英语老师。请根据学术英语写作标准对文章进行 0 到 100 的评分。返回一个包含 'score'（数字）、'feedback'（中文总评）和 'corrections'（具体的英文纠错及改进建议数组，用中文注释）的 JSON 对象。",
+      systemInstruction: "你是一位资深的雅思/托福英语老师。请根据题目难度（小学/初中/高中）对文章进行评分。返回一个 JSON 对象，包含：\n- score_total (0-100)\n- score_vocab (0-100)\n- score_grammar (0-100)\n- score_content (0-100)\n- feedback (中文总评)\n- suggestions (改进建议数组，中文)",
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
         properties: {
-          score: { type: Type.NUMBER },
+          score_total: { type: Type.NUMBER },
+          score_vocab: { type: Type.NUMBER },
+          score_grammar: { type: Type.NUMBER },
+          score_content: { type: Type.NUMBER },
           feedback: { type: Type.STRING },
-          corrections: { type: Type.ARRAY, items: { type: Type.STRING } }
+          suggestions: { type: Type.ARRAY, items: { type: Type.STRING } }
         },
-        required: ["score", "feedback", "corrections"]
+        required: ["score_total", "score_vocab", "score_grammar", "score_content", "feedback", "suggestions"]
       }
     }
   });
 
   try {
-    return JSON.parse(response.text);
+    const raw = JSON.parse(response.text);
+    // Map raw response to WritingResult structure
+    return {
+      score: {
+        total: raw.score_total,
+        vocab: raw.score_vocab,
+        grammar: raw.score_grammar,
+        content: raw.score_content
+      },
+      feedback: raw.feedback,
+      corrections: raw.suggestions
+    };
   } catch (e) {
-    return { score: 0, feedback: "评分出错", corrections: [] };
+    console.error("Error parsing Gemini response", e);
+    return {
+      score: {
+        total: 0,
+        vocab: 0,
+        grammar: 0,
+        content: 0
+      },
+      feedback: "评分出错，请稍后重试",
+      corrections: []
+    };
   }
 };
 

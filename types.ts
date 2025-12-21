@@ -153,3 +153,22 @@ export interface WarriorState {
   };
   appearance: WarriorAppearance;
 }
+
+export interface WritingMaterial {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: '小学' | '初中' | '高中';
+  category: string;
+}
+
+export interface WritingResult {
+  score: {
+    total: number;
+    vocab: number;
+    grammar: number;
+    content: number;
+  };
+  feedback: string;
+  corrections: string[];
+}
