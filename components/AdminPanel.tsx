@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Users, Database, ShieldAlert, Edit2, Trash2, Plus, Settings, ChevronDown, Check, User, GraduationCap, Palette, Layout } from 'lucide-react';
 import { useTheme, THEME_COLORS, ThemeColor } from '../contexts/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import ListeningManager from './admin/ListeningManager';
 
 interface AdminPanelProps {
   onUpdateStats: (newStats: any) => void;
@@ -21,7 +22,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onUpdateStats }) => {
   } = useTheme();
 
   const [isAdminExpanded, setIsAdminExpanded] = useState(false);
-  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'content'>('users');
+  const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'content' | 'listening'>('users');
   const [isColorMenuOpen, setIsColorMenuOpen] = useState(false);
 
   const users = [
@@ -231,6 +232,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onUpdateStats }) => {
                   >
                     内容管理
                   </button>
+                  <button
+                    onClick={() => setActiveAdminTab('listening')}
+                    className={`flex-1 py-1.5 rounded-md transition-all text-xs font-bold ${activeAdminTab === 'listening' ? 'bg-white dark:bg-slate-700 shadow-sm' : 'text-slate-400'}`}
+                  >
+                    听力管理
+                  </button>
                 </div>
 
                 <div className="bg-slate-100 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
@@ -258,13 +265,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onUpdateStats }) => {
                         ))}
                       </tbody>
                     </table>
-                  ) : (
+                  ) : activeAdminTab === 'content' ? (
                     <div className="p-8 text-center space-y-4">
                       <Database size={32} className="text-slate-400 mx-auto" />
                       <p className="text-xs text-slate-400">管理题库 (CMS)</p>
                       <button className={`px-4 py-2 rounded-lg text-xs font-bold text-white ${getColorClass('bg', 600)}`}>
                         Add Set
                       </button>
+                    </div>
+                  ) : (
+                    <div className="p-4">
+                      <ListeningManager />
                     </div>
                   )}
                 </div>
@@ -273,7 +284,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onUpdateStats }) => {
           )}
         </AnimatePresence>
       </section>
-    </div>
+    </div >
   );
 };
 

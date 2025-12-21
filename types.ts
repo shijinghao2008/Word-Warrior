@@ -107,6 +107,23 @@ export interface ReadingMaterial {
   questions: ReadingQuestion[];
 }
 
+// Listening Types
+export interface ListeningQuestion {
+  question: string;
+  options: string[];
+  answer: string;
+  explanation?: string;
+}
+
+export interface ListeningMaterial {
+  id: string;
+  title: string;
+  content: string; // The script
+  questions: ListeningQuestion[];
+  level: string;
+  audio_url: string | null;
+}
+
 // Warrior System Types
 export interface WarriorAppearance {
   skinColor: string; // hex
