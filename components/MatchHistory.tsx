@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sword, Scroll, Skull, Trophy, Handshake, Calendar, Loader2 } from 'lucide-react';
-import { PixelCard } from './ui/PixelComponents';
+// import { PixelCard } from './ui/PixelComponents';
 import { getMatchHistory, MatchHistoryItem } from '../services/pvpService';
 
 interface MatchHistoryProps {
@@ -52,20 +52,20 @@ const MatchHistory: React.FC<MatchHistoryProps> = ({ userId }) => {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: idx * 0.05 }}
                     >
-                        <PixelCard noBorder variant="dark" className={`p-3 border-l-4 ${match.result === 'win' ? 'border-l-emerald-500 bg-emerald-500/5' :
-                            match.result === 'loss' ? 'border-l-red-500 bg-red-500/5' :
-                                'border-l-slate-500'
+                        <div className={`p-3 relative rounded-xl border border-slate-700/50 ${match.result === 'win' ? 'border-l-4 border-l-emerald-500 bg-emerald-500/5' :
+                            match.result === 'loss' ? 'border-l-4 border-l-red-500 bg-red-500/5' :
+                                'border-l-4 border-l-slate-500 bg-slate-800/30'
                             } flex items-center justify-between group hover:bg-white/5 transition-colors`}>
 
                             {/* Left: Mode & Result */}
                             <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 flex items-center justify-center border-2 border-black shadow-[2px_2px_0_0_#000] ${match.result === 'win' ? 'bg-emerald-500' :
-                                    match.result === 'loss' ? 'bg-red-500' :
-                                        'bg-slate-600'
+                                <div className={`w-10 h-10 flex items-center justify-center rounded-lg shadow-sm ${match.result === 'win' ? 'bg-emerald-500/20 text-emerald-500' :
+                                    match.result === 'loss' ? 'bg-red-500/20 text-red-500' :
+                                        'bg-slate-700 text-slate-400'
                                     }`}>
-                                    {match.result === 'win' ? <Trophy size={18} className="text-white" /> :
-                                        match.result === 'loss' ? <Skull size={18} className="text-white" /> :
-                                            <Handshake size={18} className="text-white" />}
+                                    {match.result === 'win' ? <Trophy size={18} /> :
+                                        match.result === 'loss' ? <Skull size={18} /> :
+                                            <Handshake size={18} />}
                                 </div>
                                 <div className="flex flex-col">
                                     <span className={`text-xs font-black uppercase tracking-wider ${match.result === 'win' ? 'text-emerald-400' :
@@ -100,7 +100,7 @@ const MatchHistory: React.FC<MatchHistoryProps> = ({ userId }) => {
                                     {tryFormatTime(match.createdAt)}
                                 </span>
                             </div>
-                        </PixelCard>
+                        </div>
                     </motion.div>
                 ))}
             </div>
