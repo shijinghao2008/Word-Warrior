@@ -12,7 +12,7 @@ import BattleScene from './Warrior/BattleScene';
 import ChantBattleScene from './Warrior/ChantBattleScene';
 import { supabase } from '../services/supabaseClient';
 import { findWordBlitzMatch, cancelWordBlitzMatchmaking, submitWordBlitzAnswer, getOpponentProfile, checkWordBlitzMatchStatus, abandonWordBlitzMatch, PvPRoom } from '../services/pvpService';
-import { findGrammarMatch, cancelGrammarMatchmaking, submitGrammarAnswer } from '../services/grammarPvpService';
+import { findGrammarMatch, cancelGrammarMatchmaking, submitGrammarAnswer, checkGrammarMatchStatus } from '../services/grammarPvpService';
 
 interface BattleArenaProps {
   mode: string;
@@ -47,6 +47,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
   const [hasAnsweredCurrent, setHasAnsweredCurrent] = useState(false);
   const [searchingTime, setSearchingTime] = useState(0);
   const [isGameConnected, setIsGameConnected] = useState(false); // New state to block interaction
+  const [matchDetails, setMatchDetails] = useState<any>(null); // Store score breakdown
   const [isBattleBtnPressed, setIsBattleBtnPressed] = useState(false);
 
   // State Refs for Subscription Callbacks (Avoid Stale Closures)
@@ -97,17 +98,14 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
         matchmakingChannelRef.current = null;
       }
       if (roomId && userId) {
-        // Only cancel matchmaking if searching - if playing, consider abandoning? 
-        // Actually this cleanup runs on unmount.
-        // If we are 'playing', we might want to abandon OR just leave connection (reconnectable).
-        // For now, let's just ensure we clean up matchmaking request.
         if (pvpState === 'searching') {
           if (mode === 'pvp_blitz') cancelWordBlitzMatchmaking(userId);
           if (mode === 'pvp_tactics') cancelGrammarMatchmaking(userId);
+          // Clear polling interval if unmounting while searching
+          if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
         } else if (pvpState === 'playing' || pvpState === 'matched') {
           // If unmounting while playing, treat as abandon?
           // Optional: abandonWordBlitzMatch(roomId, userId);
-          // Decided NOT to auto-abandon on tab switch/unmount to allow refresh/resume.
         }
       }
     };
@@ -119,7 +117,9 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
 
   // 1. Matchmaking
   // 1. Matchmaking
+  // 1. Matchmaking
   const matchmakingChannelRef = useRef<any>(null); // Keep track of channel
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null); // Matchmaking fallback poll
 
   const startMatchmaking = async () => {
     if (!userId) return;
@@ -133,16 +133,50 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
     }
 
     // Timer for UI only - Modified to trigger AI
+    // Timer for UI only - Modified to trigger AI
     const timer = setInterval(() => {
       setSearchingTime(t => {
         if (t >= 10) {
           clearInterval(timer); // Stop counting
+          // Clear polling interval if exists
+          if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
           startAiMatch(); // Switch to AI
           return t;
         }
         return t + 1;
       });
     }, 1000);
+
+    // Polling Fallback (Every 2s) - Fix for race condition/missed socket events
+    const pollingInterval = setInterval(async () => {
+      if (pvpState !== 'searching') {
+        clearInterval(pollingInterval);
+        return;
+      }
+
+      const checkFn = mode === 'pvp_tactics' ? checkGrammarMatchStatus : checkWordBlitzMatchStatus;
+      const match = await checkFn(userId);
+
+      if (match) {
+        console.log('🔄 Polling found match!', match);
+        clearInterval(timer);
+        clearInterval(pollingInterval);
+
+        if (matchmakingChannelRef.current) {
+          await supabase.removeChannel(matchmakingChannelRef.current);
+          matchmakingChannelRef.current = null;
+        }
+
+        setMyRole(match.role);
+        setRoomId(match.roomId);
+        setPvpState('matched');
+        setStatus('MATCH FOUND!');
+      }
+    }, 2000);
+
+    // Store polling interval to clear it on cancel/AI switch
+    // We need a ref for this content to be accessible in cancel
+    pollingIntervalRef.current = pollingInterval;
 
     // 1. Setup Realtime Subscription FIRST (to avoid race condition)
     const setupSubscription = new Promise<void>((resolve) => {
@@ -240,6 +274,11 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
       matchmakingChannelRef.current = null;
     }
 
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+
     // We don't await these if switching to AI to speed up UI transition
     const p1 = mode === 'pvp_tactics' ? cancelGrammarMatchmaking(userId) : cancelWordBlitzMatchmaking(userId);
 
@@ -278,6 +317,35 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
       armorId: armors[Math.floor(Math.random() * armors.length)],
       weaponId: weapons[Math.floor(Math.random() * weapons.length)]
     };
+  };
+
+  // ============================================
+  // SHARED EFFECTS (Moved Up)
+  // ============================================
+
+  const triggerEffect = (val: number, target: 'player' | 'enemy', type?: 'crit' | 'block') => {
+    const id = Date.now() + Math.random();
+    setDamageNumbers(prev => [...prev, { id, val, target, type }]);
+    setIsShaking(target);
+
+    // Play Sound
+    if (type === 'block') {
+      // soundService.playBlock(); // If implemented
+    } else {
+      soundService.playAttack(type === 'crit' ? 'fire' : 'slash');
+    }
+
+    // Trigger Visual Event
+    setCombatEvent({
+      type: type === 'block' ? 'block' : 'attack',
+      target: target,
+      damage: val
+    });
+    // Reset event after short animation time
+    setTimeout(() => setCombatEvent(null), 500);
+
+    setTimeout(() => setIsShaking(null), 300);
+    setTimeout(() => setDamageNumbers(prev => prev.filter(d => d.id !== id)), 1200);
   };
 
   // AI MATCH LOGIC
@@ -489,6 +557,11 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
         setStatus('YOU LOSE!');
         // onDefeat(); // Waiting for manual exit
       }
+
+      // Set Match Details if available
+      if (room.match_details && myRole) {
+        setMatchDetails(room.match_details[myRole]);
+      }
       return;
     }
 
@@ -628,30 +701,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
   // SHARED EFFECTS
   // ============================================
 
-  const triggerEffect = (val: number, target: 'player' | 'enemy', type?: 'crit' | 'block') => {
-    const id = Date.now() + Math.random();
-    setDamageNumbers(prev => [...prev, { id, val, target, type }]);
-    setIsShaking(target);
 
-    // Play Sound
-    if (type === 'block') {
-      // soundService.playBlock(); // If implemented
-    } else {
-      soundService.playAttack(type === 'crit' ? 'fire' : 'slash');
-    }
-
-    // Trigger Visual Event
-    setCombatEvent({
-      type: type === 'block' ? 'block' : 'attack',
-      target: target, // The target in combatEvent IS the victim 
-      damage: val
-    });
-    // Reset event after short animation time
-    setTimeout(() => setCombatEvent(null), 500);
-
-    setTimeout(() => setIsShaking(null), 300);
-    setTimeout(() => setDamageNumbers(prev => prev.filter(d => d.id !== id)), 1200);
-  };
 
   // ============================================
   // OLD MODES LOGIC (Tactics, Chant)
@@ -1008,6 +1058,35 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
                   {status === 'YOU WIN!' ? 'Victory Achieved' : 'Defeat accepted'}
                 </p>
               </div>
+
+              {matchDetails && (
+                <div className="bg-slate-800/50 rounded-xl p-6 text-left space-y-2 min-w-[250px] border border-slate-700">
+                  <div className="flex justify-between text-slate-400 font-bold">
+                    <span>Base Score:</span>
+                    <span className={matchDetails.base >= 0 ? 'text-green-400' : 'text-red-400'}>{matchDetails.base > 0 ? '+' : ''}{matchDetails.base}</span>
+                  </div>
+                  {matchDetails.hp_bonus > 0 && (
+                    <div className="flex justify-between text-slate-400 font-bold">
+                      <span>HP Bonus:</span>
+                      <span className="text-green-400">+{matchDetails.hp_bonus}</span>
+                    </div>
+                  )}
+                  {matchDetails.streak_bonus > 0 && (
+                    <div className="flex justify-between text-slate-400 font-bold">
+                      <span>Streak Bonus:</span>
+                      <span className="text-green-400">+{matchDetails.streak_bonus}</span>
+                    </div>
+                  )}
+                  <div className="h-px bg-slate-600 my-2" />
+                  <div className="flex justify-between text-white font-black text-xl">
+                    <span>Total:</span>
+                    <span className={(matchDetails.base + matchDetails.hp_bonus + matchDetails.streak_bonus) >= 0 ? 'text-green-400' : 'text-red-400'}>
+                      {(matchDetails.base + matchDetails.hp_bonus + matchDetails.streak_bonus) > 0 ? '+' : ''}
+                      {matchDetails.base + matchDetails.hp_bonus + matchDetails.streak_bonus}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-4 justify-center">
                 <button

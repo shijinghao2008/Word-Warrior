@@ -11,16 +11,37 @@ interface MatchHistoryProps {
 const MatchHistory: React.FC<MatchHistoryProps> = ({ userId }) => {
     const [history, setHistory] = useState<MatchHistoryItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     useEffect(() => {
-        const fetchHistory = async () => {
-            setLoading(true);
-            const data = await getMatchHistory(userId);
-            setHistory(data);
-            setLoading(false);
-        };
-        fetchHistory();
+        // Initial load
+        loadHistory(0);
     }, [userId]);
+
+    const loadHistory = async (pageNum: number) => {
+        if (pageNum === 0) setLoading(true);
+        else setLoadingMore(true);
+
+        const { items, hasMore: moreAvailable } = await getMatchHistory(userId, pageNum);
+
+        if (pageNum === 0) {
+            setHistory(items);
+        } else {
+            setHistory(prev => [...prev, ...items]);
+        }
+
+        setHasMore(moreAvailable);
+        setPage(pageNum);
+
+        if (pageNum === 0) setLoading(false);
+        else setLoadingMore(false);
+    };
+
+    const handleLoadMore = () => {
+        loadHistory(page + 1);
+    };
 
     if (loading) {
         return (
@@ -89,7 +110,20 @@ const MatchHistory: React.FC<MatchHistoryProps> = ({ userId }) => {
                             {/* Middle: Score */}
                             <div className="flex flex-col items-center">
                                 <span className="text-lg font-black italic text-slate-200">{match.score}</span>
+                                <div className="flex flex-col items-center mt-1">
+                                    {match.scoreChange !== undefined && match.scoreChange !== 0 && (
+                                        <span className={`text-[10px] font-bold ${match.scoreChange > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                            {match.scoreChange > 0 ? '+' : ''}{match.scoreChange} Pts
+                                        </span>
+                                    )}
+                                    {match.startRankPoints !== undefined && (
+                                        <span className="text-[9px] text-slate-500 font-mono">
+                                            Start: {match.startRankPoints}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
+
 
                             {/* Right: Opponent & Time */}
                             <div className="flex flex-col items-end text-right">
@@ -103,6 +137,27 @@ const MatchHistory: React.FC<MatchHistoryProps> = ({ userId }) => {
                         </div>
                     </motion.div>
                 ))}
+
+                {/* Load More Button */}
+                {hasMore && (
+                    <div className="pt-2 pb-4 flex justify-center">
+                        <button
+                            onClick={handleLoadMore}
+                            disabled={loadingMore}
+                            className="text-xs font-black uppercase tracking-widest text-slate-500 hover:text-indigo-500 transition-colors flex items-center gap-2"
+                        >
+                            {loadingMore ? (
+                                <>
+                                    <Loader2 size={12} className="animate-spin" /> LOADING...
+                                </>
+                            ) : (
+                                <>
+                                    LOAD MORE <Calendar size={12} />
+                                </>
+                            )}
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );
