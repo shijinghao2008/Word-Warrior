@@ -129,6 +129,8 @@ export const abandonWordBlitzMatch = async (roomId: string, userId: string) => {
 
         if (fetchError || !room) return;
 
+        // winner_id logic: if I (userId) am abandoning, the OTHER player wins.
+        // This function can be called by the leaver OR by the opponent detecting the leaver.
         const winnerId = room.player1_id === userId ? room.player2_id : room.player1_id;
 
         const { error } = await supabase

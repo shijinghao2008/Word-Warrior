@@ -72,14 +72,15 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
   // Handle manual exit / unload
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (pvpState === 'playing' && roomId && userId && !roomId.startsWith('local_ai_')) {
-        if (mode === 'pvp_tactics') abandonGrammarMatch(roomId, userId);
-        else abandonWordBlitzMatch(roomId, userId);
+      const current = stateRef.current;
+      if (current.pvpState === 'playing' && current.roomId && current.userId && !current.roomId.startsWith('local_ai_')) {
+        if (mode === 'pvp_tactics') abandonGrammarMatch(current.roomId, current.userId);
+        else abandonWordBlitzMatch(current.roomId, current.userId);
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [pvpState, roomId, userId, mode]);
+  }, [mode]); // Mode is stable enough, or could be empty if mode is in ref (it isn't, but that's fine)
 
   // Other Modes State
   const [currentGrammarQ, setCurrentGrammarQ] = useState(MOCK_GRAMMAR_QUESTIONS[0]);
@@ -384,28 +385,59 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
             console.log('📥 Game Update Received:', payload.new);
             handleRoomUpdate(payload.new as PvPRoom);
           }
-        )
-        .subscribe((status, err) => {
+        );
+
+      activeChannel = channel;
+
+      // Track Presence
+      channel
+        .on('presence', { event: 'sync' }, () => {
+          const newState = channel.presenceState();
+          console.log('👥 Presence Sync:', newState);
+        })
+        .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+          console.log('➕ User Joined:', newPresences);
+        })
+        .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+          console.log('🏃 User Left:', leftPresences);
+          const currentRef = stateRef.current;
+
+          // Only trigger if we are in a match
+          if (currentRef.pvpState !== 'playing') {
+            console.log('Ignoring leave event (not playing):', currentRef.pvpState);
+            return;
+          }
+
+          leftPresences.forEach((presence: any) => {
+            console.log('Checking left user:', presence);
+            if (presence.user_id && presence.user_id !== userId) {
+              console.log('🚨 Opponent disconnected! Claiming victory against:', presence.user_id);
+              if (mode === 'pvp_tactics') abandonGrammarMatch(roomId, presence.user_id);
+              else abandonWordBlitzMatch(roomId, presence.user_id);
+            }
+          });
+        })
+        .subscribe(async (status, err) => {
           if (status === 'SUBSCRIBED') {
+            console.log('✅ Game Channel Subscribed!');
             setIsGameConnected(true);
+            const trackRes = await channel.track({ user_id: userId, online_at: new Date().toISOString() });
+            console.log('📍 Presence Track Result:', trackRes);
           } else {
+            console.log('❌ Game Channel Status:', status);
             setIsGameConnected(false);
           }
 
           if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR') {
+            console.log('⚠️ Channel Error/Timeout');
             supabase.removeChannel(channel);
             setIsGameConnected(false);
             if (isMounted) retryTimeout = setTimeout(subscribeToGame, 2000);
           }
         });
 
-      activeChannel = channel;
-
-      // Cleanup on unmount or game end
       return () => {
-        if (pvpState === 'playing' || pvpState === 'matched') {
-          // Basic disconnect tracking could go here if we tracked presence
-        }
+        // Cleanup handled by parent useEffect return
       };
     };
 
