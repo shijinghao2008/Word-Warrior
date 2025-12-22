@@ -81,39 +81,48 @@ const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess }) => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 text-gray-500">
-        <Loader className="w-10 h-10 animate-spin mb-4 text-violet-500" />
-        <p>Loading library...</p>
+      <div className="flex flex-col items-center justify-center p-20">
+        <Loader className="w-10 h-10 animate-spin mb-4" style={{ color: 'var(--ww-accent)' }} />
+        <p className="text-white/80 font-black uppercase tracking-widest text-xs">加载阅读材料...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center p-12 text-red-400">
-        <p>{error}</p>
+      <div className="max-w-3xl mx-auto px-4 py-10">
+        <div className="ww-surface ww-surface--soft rounded-[22px] p-6 text-center">
+          <p className="ww-ink font-black">{error}</p>
         <button
           onClick={fetchMaterials}
-          className="mt-4 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-colors"
+          className="mt-5 px-6 py-3 ww-btn ww-btn--accent rounded-2xl text-[10px]"
         >
-          Retry
+          重试
         </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-6">
       {mode === 'list' && (
         <>
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-3 bg-violet-500/10 rounded-xl">
-                <BookOpen className="w-6 h-6 text-violet-400" />
+          <div className="mb-4">
+            <div className="ww-surface ww-surface--soft rounded-[22px] p-4 flex items-center gap-3">
+              <div
+                className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                style={{
+                  background: 'rgba(252,203,89,0.95)',
+                  border: '3px solid var(--ww-stroke)',
+                  boxShadow: '0 6px 0 rgba(0,0,0,0.18)',
+                }}
+              >
+                <BookOpen className="w-6 h-6 text-black" />
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">Reading Library</h2>
-                <p className="text-gray-400 text-sm">Read articles and answer questions to improve your HP</p>
+              <div className="min-w-0">
+                <h2 className="text-[14px] font-black ww-ink uppercase tracking-widest">阅读试炼</h2>
+                <p className="text-[10px] font-black ww-muted uppercase tracking-[0.18em]">阅读文章 → 回答问题 → 领取 EXP</p>
               </div>
             </div>
           </div>

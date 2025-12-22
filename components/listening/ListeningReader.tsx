@@ -111,23 +111,25 @@ const ListeningReader: React.FC<ListeningReaderProps> = ({ material, onBack, onC
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 pb-20">
+        <div className="max-w-4xl mx-auto space-y-6 pb-28">
             {/* Header */}
-            <button
-                onClick={onBack}
-                className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
-            >
-                <ArrowLeft size={20} />
-                <span>Back to Library</span>
-            </button>
+            <div className="flex items-center justify-between gap-3">
+                <button onClick={onBack} className="ww-btn ww-btn--ink px-4 py-2 rounded-2xl text-[10px] flex items-center gap-2">
+                    <ArrowLeft size={16} />
+                    返回
+                </button>
+                <div className="px-3 py-1.5 ww-pill ww-pill--accent">
+                    <span className="text-[10px] font-black text-black uppercase tracking-widest">{material.level || 'Primary'}</span>
+                </div>
+            </div>
 
-            <div className="flex flex-col gap-2">
-                <h1 className="text-3xl font-bold text-white">{material.title}</h1>
-                <span className="text-cyan-400 text-sm font-medium">{material.level || 'Primary'} Level</span>
+            <div className="ww-surface ww-surface--soft rounded-[22px] p-5">
+                <h1 className="text-xl md:text-2xl font-black ww-ink">{material.title}</h1>
+                <p className="text-[10px] font-black ww-muted uppercase tracking-[0.18em] mt-1">先听音频 → 再提交答案（提交后可快进/查看原文）</p>
             </div>
 
             {/* Audio Player Card */}
-            <div className="bg-gray-800/50 backdrop-blur-md rounded-2xl p-6 border border-white/10 shadow-xl sticky top-4 z-10 transition-all">
+            <div className="ww-surface ww-surface--soft rounded-[22px] p-6 sticky top-4 z-10">
                 <audio
                     ref={audioRef}
                     src={material.audio_url || undefined}
@@ -139,10 +141,14 @@ const ListeningReader: React.FC<ListeningReaderProps> = ({ material, onBack, onC
 
                 <div className="flex flex-col gap-4">
                     {/* Progress Bar */}
-                    <div className="relative w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                    <div
+                        className="relative w-full h-3 rounded-full overflow-hidden"
+                        style={{ border: '3px solid var(--ww-stroke)', background: 'rgba(26,15,40,0.10)' }}
+                    >
                         <motion.div
-                            className="absolute top-0 left-0 h-full bg-cyan-500"
+                            className="absolute top-0 left-0 h-full"
                             style={{ width: `${progress}%` }}
+                            animate={{ backgroundColor: 'var(--ww-accent)' as any }}
                         />
                         <input
                             type="range"
@@ -155,7 +161,7 @@ const ListeningReader: React.FC<ListeningReaderProps> = ({ material, onBack, onC
                         />
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-gray-400 font-mono">
+                    <div className="flex items-center justify-between text-[10px] font-black ww-muted font-mono">
                         <span>{audioRef.current ? formatTime(audioRef.current.currentTime) : "0:00"}</span>
                         <span>{formatTime(duration)}</span>
                     </div>
@@ -165,16 +171,16 @@ const ListeningReader: React.FC<ListeningReaderProps> = ({ material, onBack, onC
                         <button
                             onClick={() => skipTime(-5)}
                             disabled={!isSubmitted}
-                            className={`p-2 rounded-full transition-colors ${isSubmitted ? 'text-gray-400 hover:text-white hover:bg-white/10' : 'text-gray-700 cursor-not-allowed'}`}
+                            className={`p-2 rounded-full transition-colors ${isSubmitted ? 'ww-btn ww-btn--accent' : 'ww-btn ww-btn--ink opacity-60 cursor-not-allowed'}`}
                         >
                             <RotateCcw size={20} />
                         </button>
 
                         <button
                             onClick={togglePlay}
-                            className={`w-14 h-14 rounded-full flex items-center justify-center transition-all transform hover:scale-105 active:scale-95 shadow-lg ${isPlaying
-                                    ? (isSubmitted ? 'bg-amber-500 text-white shadow-amber-500/30' : 'bg-gray-600 text-gray-400 cursor-not-allowed') // Playing but locked (pause disabled)
-                                    : 'bg-cyan-500 text-white shadow-cyan-500/30 hover:bg-cyan-400' // Not playing (can play)
+                            className={`w-14 h-14 rounded-full flex items-center justify-center transition-all transform active:scale-95 ${isPlaying
+                                ? (isSubmitted ? 'ww-btn ww-btn--accent' : 'ww-btn ww-btn--ink opacity-70 cursor-not-allowed')
+                                : 'ww-btn ww-btn--accent'
                                 }`}
                         >
                             {/* Icon Logic: If Playing & NOT Submitted -> Show Pause but it acts disabled? User req says "cannot pause". So Pause icon but clicking does nothing? 
@@ -187,14 +193,14 @@ const ListeningReader: React.FC<ListeningReaderProps> = ({ material, onBack, onC
                         <button
                             onClick={() => skipTime(5)}
                             disabled={!isSubmitted}
-                            className={`p-2 rounded-full transition-colors ${isSubmitted ? 'text-gray-400 hover:text-white hover:bg-white/10' : 'text-gray-700 cursor-not-allowed'}`}
+                            className={`p-2 rounded-full transition-colors ${isSubmitted ? 'ww-btn ww-btn--accent' : 'ww-btn ww-btn--ink opacity-60 cursor-not-allowed'}`}
                         >
                             <FastForward size={20} />
                         </button>
                     </div>
                     {!isSubmitted && (
-                        <p className="text-center text-xs text-amber-500/80 mt-2 font-medium">
-                            Audio controls are locked until you submit your answers.
+                        <p className="text-center text-[10px] mt-2 font-black" style={{ color: 'rgba(252,203,89,0.95)' }}>
+                            未提交前：不可暂停 / 快进 / 拖动进度条
                         </p>
                     )}
                 </div>
@@ -207,28 +213,38 @@ const ListeningReader: React.FC<ListeningReaderProps> = ({ material, onBack, onC
                     const userAnswer = userAnswers[idx];
 
                     return (
-                        <div key={idx} className="bg-gray-800/30 rounded-xl p-6 border border-white/5 space-y-4">
-                            <h3 className="text-lg font-bold text-white flex gap-3">
-                                <span className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-sm">{idx + 1}</span>
+                        <div key={idx} className="ww-surface ww-surface--soft rounded-[22px] p-6 space-y-4">
+                            <h3 className="text-[14px] font-black ww-ink flex gap-3">
+                                <span
+                                    className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-black"
+                                    style={{ background: 'rgba(252,203,89,0.95)', border: '3px solid var(--ww-stroke)', boxShadow: '0 6px 0 rgba(0,0,0,0.18)' }}
+                                >
+                                    {idx + 1}
+                                </span>
                                 {q.question}
                             </h3>
 
                             <div className="grid grid-cols-1 gap-3 pl-11">
                                 {q.options.map((opt, optIdx) => {
                                     // Colors logic
-                                    let btnClass = "bg-gray-900/50 border-gray-700 text-gray-300 hover:bg-gray-800";
+                                    let btnClass = "ww-surface ww-surface--soft border-2";
+                                    let btnStyle: React.CSSProperties = { borderColor: 'rgba(43,23,63,0.22)' };
 
                                     if (isSubmitted) {
                                         if (opt === q.answer) {
-                                            btnClass = "bg-green-500/20 border-green-500 text-green-400"; // Correct answer (always green)
+                                            btnClass = "ww-surface ww-surface--soft border-2";
+                                            btnStyle = { borderColor: 'rgba(16,185,129,0.75)', background: 'rgba(16,185,129,0.14)' };
                                         } else if (opt === userAnswer && opt !== q.answer) {
-                                            btnClass = "bg-red-500/20 border-red-500 text-red-400"; // Wrong selected answer (red)
+                                            btnClass = "ww-surface ww-surface--soft border-2";
+                                            btnStyle = { borderColor: 'rgba(239,68,68,0.75)', background: 'rgba(239,68,68,0.12)' };
                                         } else {
-                                            btnClass = "bg-gray-900/50 border-gray-700 text-gray-500 opacity-50"; // Others
+                                            btnClass = "ww-surface ww-surface--soft border-2 opacity-60";
+                                            btnStyle = { borderColor: 'rgba(43,23,63,0.18)' };
                                         }
                                     } else {
                                         if (userAnswer === opt) {
-                                            btnClass = "bg-cyan-500/20 border-cyan-500 text-cyan-300"; // Selected
+                                            btnClass = "ww-surface ww-surface--soft border-2";
+                                            btnStyle = { borderColor: 'rgba(252,203,89,0.75)', background: 'rgba(252,203,89,0.28)' };
                                         }
                                     }
 
@@ -237,9 +253,10 @@ const ListeningReader: React.FC<ListeningReaderProps> = ({ material, onBack, onC
                                             key={optIdx}
                                             onClick={() => handleOptionSelect(idx, opt)}
                                             disabled={isSubmitted}
-                                            className={`p-4 rounded-xl text-left border transition-all flex items-center justify-between group ${btnClass}`}
+                                            className={`p-4 rounded-2xl text-left transition-all flex items-center justify-between ${btnClass}`}
+                                            style={btnStyle}
                                         >
-                                            <span>{opt}</span>
+                                            <span className="ww-ink font-black">{opt}</span>
                                             {isSubmitted && opt === q.answer && <CheckCircle size={18} />}
                                             {isSubmitted && opt === userAnswer && opt !== q.answer && <AlertCircle size={18} />}
                                         </button>
@@ -252,35 +269,37 @@ const ListeningReader: React.FC<ListeningReaderProps> = ({ material, onBack, onC
             </div>
 
             {/* Footer / Submit */}
-            <div className="sticky bottom-0 p-4 bg-gray-900/95 backdrop-blur border-t border-white/10 -mx-4 px-8 flex items-center justify-between">
+            <div className="sticky bottom-0 -mx-4 px-6 py-4 flex items-center justify-between">
+                <div className="ww-surface ww-surface--soft rounded-[22px] w-full px-4 py-3 flex items-center justify-between">
 
                 {/* Transcript Toggle */}
                 <button
                     onClick={() => setShowTranscript(!showTranscript)}
                     disabled={!isSubmitted}
-                    className={`flex items-center gap-2 font-medium transition-colors ${isSubmitted ? 'text-cyan-400 hover:text-cyan-300' : 'text-gray-600 cursor-not-allowed'}`}
+                    className={`flex items-center gap-2 font-black transition-colors ${isSubmitted ? 'ww-link' : 'ww-muted cursor-not-allowed'}`}
                 >
                     {showTranscript ? <EyeOff size={18} /> : <Eye size={18} />}
-                    {showTranscript ? "Hide Transcript" : "View Original Text"}
+                    {showTranscript ? "隐藏原文" : "查看原文"}
                 </button>
 
                 {!isSubmitted ? (
                     <button
                         onClick={handleSubmit}
                         disabled={Object.keys(userAnswers).length < material.questions.length}
-                        className={`px-8 py-3 rounded-full font-bold uppercase tracking-wide transition-all ${Object.keys(userAnswers).length < material.questions.length
-                                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                                : 'bg-cyan-500 hover:bg-cyan-400 text-white shadow-lg shadow-cyan-500/25'
+                        className={`px-6 py-3 rounded-2xl text-[10px] transition-all ${Object.keys(userAnswers).length < material.questions.length
+                            ? 'ww-btn ww-btn--ink opacity-60 cursor-not-allowed'
+                            : 'ww-btn ww-btn--accent'
                             }`}
                     >
-                        Submit Answers
+                        提交答案
                     </button>
                 ) : (
                     <div className="text-right">
-                        <span className="text-sm text-gray-400 block">Review your results</span>
-                        <span className="text-green-500 font-bold">Completed</span>
+                        <span className="text-[10px] ww-muted font-black block">已提交</span>
+                        <span className="font-black" style={{ color: 'rgba(16,185,129,0.95)' }}>完成</span>
                     </div>
                 )}
+                </div>
             </div>
 
             {/* Transcript Area */}
@@ -292,9 +311,9 @@ const ListeningReader: React.FC<ListeningReaderProps> = ({ material, onBack, onC
                         exit={{ opacity: 0, height: 0 }}
                         className="overflow-hidden"
                     >
-                        <div className="bg-gray-800/50 rounded-2xl p-8 border border-white/10 mt-8">
-                            <h3 className="text-sm font-black uppercase text-gray-500 tracking-widest mb-4">Transcript</h3>
-                            <p className="leading-relaxed text-gray-300 font-serif text-lg">
+                        <div className="ww-surface ww-surface--soft rounded-[22px] p-8 mt-6">
+                            <h3 className="text-sm font-black uppercase ww-ink tracking-widest mb-4">原文</h3>
+                            <p className="leading-relaxed ww-ink font-serif text-lg">
                                 {material.content}
                             </p>
                         </div>

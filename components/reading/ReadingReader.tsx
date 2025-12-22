@@ -38,47 +38,49 @@ const ReadingReader: React.FC<ReadingReaderProps> = ({ material, onBack, onCompl
         <div className="max-w-4xl mx-auto">
             <button
                 onClick={onBack}
-                className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6 group"
+                className="ww-btn ww-btn--ink px-4 py-2 rounded-2xl text-[10px] flex items-center gap-2 mb-4"
             >
-                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                Back to Library
+                <ArrowLeft className="w-5 h-5" />
+                返回
             </button>
 
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gray-800/50 backdrop-blur-md border border-white/10 rounded-2xl p-8 md:p-12 shadow-2xl relative overflow-hidden mb-12"
+                className="ww-surface ww-surface--soft rounded-[22px] p-8 md:p-10 relative overflow-hidden mb-12"
             >
-                <div className="absolute top-0 right-0 p-6 opacity-5 pointer-events-none">
-                    <BookOpen className="w-64 h-64" />
-                </div>
-
                 <div className="relative z-10">
-                    <header className="mb-8 border-b border-white/10 pb-8">
+                    <header className="mb-6 border-b pb-6" style={{ borderColor: 'rgba(43,23,63,0.16)' }}>
                         <div className="flex items-center gap-3 mb-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold bg-violet-500/20 text-violet-300 border border-violet-500/30`}>
-                                {material.category || 'General'}
+                            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-2"
+                                style={{ borderColor: 'rgba(43,23,63,0.22)', background: 'rgba(255,255,255,0.25)', color: 'rgba(26,15,40,0.75)' }}
+                            >
+                                {material.category || '通用'}
                             </span>
-                            <span className="text-gray-400 text-sm">•</span>
-                            <span className="text-gray-400 text-sm">{material.difficulty}</span>
+                            <span className="ww-muted text-sm">•</span>
+                            <span className="ww-muted text-sm">{material.difficulty}</span>
                         </div>
-                        <h1 className="text-3xl md:text-5xl font-bold text-white mb-6 leading-tight">
+                        <h1 className="text-2xl md:text-4xl font-black ww-ink mb-2 leading-tight">
                             {material.title}
                         </h1>
                     </header>
 
-                    <div className="prose prose-invert prose-lg max-w-none mb-16">
+                    <div className="max-w-none mb-10">
                         {material.content.split('\n').map((paragraph, index) => (
-                            <p key={index} className="mb-6 text-gray-300 leading-relaxed text-lg">
+                            <p key={index} className="mb-5 ww-ink leading-relaxed text-base md:text-lg">
                                 {paragraph}
                             </p>
                         ))}
                     </div>
 
-                    <div className="mt-12 pt-12 border-t border-white/10">
-                        <h2 className="text-2xl font-bold text-white mb-8 flex items-center gap-3">
-                            <span className="w-8 h-8 rounded-lg bg-violet-500/20 flex items-center justify-center text-violet-400 text-sm">?</span>
-                            Comprehension Questions
+                    <div className="mt-8 pt-8 border-t" style={{ borderColor: 'rgba(43,23,63,0.16)' }}>
+                        <h2 className="text-lg font-black ww-ink mb-6 flex items-center gap-3">
+                            <span className="w-8 h-8 rounded-2xl flex items-center justify-center text-sm font-black"
+                                style={{ background: 'rgba(252,203,89,0.95)', border: '3px solid var(--ww-stroke)', boxShadow: '0 6px 0 rgba(0,0,0,0.18)' }}
+                            >
+                                ?
+                            </span>
+                            阅读理解题
                         </h2>
 
                         <div className="space-y-2">
@@ -96,20 +98,21 @@ const ReadingReader: React.FC<ReadingReaderProps> = ({ material, onBack, onCompl
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="mt-12 flex flex-col items-center justify-center p-8 bg-gradient-to-br from-violet-500/10 to-indigo-500/10 rounded-2xl border border-violet-500/20"
+                                className="mt-8 flex flex-col items-center justify-center p-8 rounded-[22px] border-2"
+                                style={{ borderColor: 'rgba(43,23,63,0.22)', background: 'rgba(255,255,255,0.18)' }}
                             >
                                 <div className="mb-4">
-                                    <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-2" />
-                                    <p className="text-2xl font-bold text-white text-center">Reading Completed!</p>
+                                    <CheckCircle className="w-16 h-16 mx-auto mb-2" style={{ color: 'rgba(16,185,129,0.95)' }} />
+                                    <p className="text-xl font-black ww-ink text-center">完成！</p>
                                 </div>
-                                <p className="text-gray-400 mb-6">
-                                    You got <span className="text-white font-bold">{score}</span> out of <span className="text-white font-bold">{material.questions.length}</span> correct.
+                                <p className="ww-muted mb-6 font-black">
+                                    正确 <span className="ww-ink">{score}</span> / <span className="ww-ink">{material.questions.length}</span>
                                 </p>
                                 <button
                                     onClick={handleFinish}
-                                    className="px-8 py-3 bg-white text-gray-900 rounded-xl font-bold hover:bg-gray-100 transform hover:scale-105 transition-all shadow-lg"
+                                    className="px-8 py-3 ww-btn ww-btn--accent rounded-2xl text-[10px]"
                                 >
-                                    Finish & Collect Data
+                                    领取 EXP
                                 </button>
                             </motion.div>
                         )}

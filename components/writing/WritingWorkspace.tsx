@@ -57,18 +57,18 @@ const WritingWorkspace: React.FC<WritingWorkspaceProps> = ({ material, onBack, o
         <div className="h-full flex flex-col">
             <button
                 onClick={onBack}
-                className="self-start mb-4 flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-xs font-black uppercase tracking-widest"
+                className="ww-btn ww-btn--ink px-4 py-2 rounded-2xl text-[10px] flex items-center gap-2 self-start mb-4"
             >
-                <ArrowLeft size={16} /> Back to Topics
+                <ArrowLeft size={16} /> 返回
             </button>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
                 {/* Left Side: Writing Area */}
                 <div className="lg:col-span-7 flex flex-col space-y-4 h-full">
-                    <div className="dark:bg-slate-900 bg-white border dark:border-slate-800 border-slate-200 p-6 rounded-3xl shadow-xl flex-1 flex flex-col">
+                    <div className="ww-surface ww-surface--soft p-6 rounded-3xl flex-1 flex flex-col">
                         <div className="mb-4">
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-fuchsia-500/50">Topic / 题目</span>
-                            <h2 className="text-xl font-bold dark:text-white text-slate-900 mt-1">{material.title}</h2>
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] ww-muted">题目</span>
+                            <h2 className="text-xl font-black ww-ink mt-1">{material.title}</h2>
                         </div>
 
                         <div className="relative flex-1">
@@ -79,8 +79,10 @@ const WritingWorkspace: React.FC<WritingWorkspaceProps> = ({ material, onBack, o
                                 placeholder="Start writing here..."
                                 className="custom-scrollbar w-full h-full min-h-[600px] dark:bg-slate-950 bg-slate-50 border-2 dark:border-slate-800 border-slate-200 rounded-xl p-4 focus:border-fuchsia-500 dark:focus:border-fuchsia-400 outline-none transition-all resize-none font-medium leading-relaxed dark:text-white text-slate-800"
                             />
-                            <div className="absolute bottom-4 right-4 text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md">
-                                {wordCount} words
+                            <div className="absolute bottom-4 right-4 text-[10px] font-black ww-muted px-2 py-1 rounded-xl border-2"
+                                style={{ borderColor: 'rgba(43,23,63,0.18)', background: 'rgba(255,255,255,0.25)' }}
+                            >
+                                {wordCount} 词
                             </div>
                         </div>
 
@@ -89,16 +91,16 @@ const WritingWorkspace: React.FC<WritingWorkspaceProps> = ({ material, onBack, o
                                 <button
                                     onClick={handleSubmit}
                                     disabled={isSubmitting || wordCount < minWords}
-                                    className="w-full py-3 bg-fuchsia-600 hover:bg-fuchsia-500 disabled:bg-slate-200 dark:disabled:bg-slate-800 rounded-xl font-black tracking-widest uppercase flex items-center justify-center gap-2 text-white shadow-lg shadow-fuchsia-500/20 transition-all"
+                                    className={`w-full py-3 rounded-2xl text-[10px] flex items-center justify-center gap-2 transition-all ${isSubmitting || wordCount < minWords ? 'ww-btn ww-btn--ink opacity-60 cursor-not-allowed' : 'ww-btn ww-btn--accent'}`}
                                 >
                                     {isSubmitting ? (
                                         <>
                                             <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                                            Grading...
+                                            批改中...
                                         </>
                                     ) : (
                                         <>
-                                            <Send size={16} /> Submit
+                                            <Send size={16} /> 提交
                                         </>
                                     )}
                                 </button>
@@ -109,16 +111,16 @@ const WritingWorkspace: React.FC<WritingWorkspaceProps> = ({ material, onBack, o
 
                 {/* Right Side: Result & Feedback */}
                 <div className="lg:col-span-5 h-full">
-                    <div className="dark:bg-slate-900/50 bg-white/50 border dark:border-slate-800 border-slate-200 p-6 rounded-3xl h-full shadow-inner backdrop-blur-sm">
+                    <div className="ww-surface ww-surface--soft p-6 rounded-3xl h-full">
                         {result ? (
                             <WritingResultDisplay result={result} />
                         ) : (
                             <div className="h-full flex flex-col items-center justify-center text-center opacity-30 space-y-4">
-                                <div className="w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
+                                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: 'rgba(26,15,40,0.10)', border: '2px solid rgba(43,23,63,0.18)' }}>
                                     <Sparkles size={32} />
                                 </div>
-                                <p className="text-sm font-bold uppercase tracking-wider text-slate-500">
-                                    Write and submit<br />to get AI Feedback
+                                <p className="text-sm font-black uppercase tracking-wider ww-muted">
+                                    提交后显示 AI 反馈
                                 </p>
                             </div>
                         )}

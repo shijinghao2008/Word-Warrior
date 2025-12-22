@@ -64,26 +64,33 @@ const WritingTraining: React.FC<WritingTrainingProps> = ({ onSuccess }) => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center p-20 text-slate-500">
-        <Loader className="w-10 h-10 animate-spin mb-4 text-fuchsia-500" />
-        <p>Loading topics...</p>
+      <div className="flex flex-col items-center justify-center p-20">
+        <Loader className="w-10 h-10 animate-spin mb-4" style={{ color: 'var(--ww-accent)' }} />
+        <p className="text-white/80 font-black uppercase tracking-widest text-xs">加载写作题目...</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 h-full">
+    <div className="max-w-6xl mx-auto px-4 py-6 h-full">
       {/* Use h-full to ensure workspace expands */}
       {mode === 'list' ? (
         <>
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-3 bg-fuchsia-500/10 rounded-xl">
-                <PenTool className="w-6 h-6 text-fuchsia-400" />
+          <div className="mb-4">
+            <div className="ww-surface ww-surface--soft rounded-[22px] p-4 flex items-center gap-3">
+              <div
+                className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                style={{
+                  background: 'rgba(252,203,89,0.95)',
+                  border: '3px solid var(--ww-stroke)',
+                  boxShadow: '0 6px 0 rgba(0,0,0,0.18)',
+                }}
+              >
+                <PenTool className="w-6 h-6 text-black" />
               </div>
-              <div>
-                <h2 className="text-2xl font-bold dark:text-white text-slate-900">Writing Center</h2>
-                <p className="text-gray-400 text-sm">Choose a topic and improve your writing skills</p>
+              <div className="min-w-0">
+                <h2 className="text-[14px] font-black ww-ink uppercase tracking-widest">写作工坊</h2>
+                <p className="text-[10px] font-black ww-muted uppercase tracking-[0.18em]">选择题目 → 写作提交 → 领取 EXP</p>
               </div>
             </div>
           </div>
