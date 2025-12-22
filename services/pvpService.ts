@@ -162,98 +162,107 @@ export interface MatchHistoryItem {
 /**
  * Fetch unified match history for a user
  */
-export const getMatchHistory = async (userId: string): Promise<MatchHistoryItem[]> => {
+/**
+ * Fetch unified match history for a user with Pagination & Optimized Performance
+ */
+export const getMatchHistory = async (userId: string, page: number = 0, limit: number = 10): Promise<{ items: MatchHistoryItem[], hasMore: boolean }> => {
     try {
-        const history: MatchHistoryItem[] = [];
+        const historyData: any[] = [];
+        const startRange = page * limit;
+        const endRange = startRange + limit - 1;
 
-        // 1. Fetch Blitz History
-        const { data: blitzData } = await supabase
-            .from('pvp_word_blitz_rooms')
-            .select('*')
-            .or(`player1_id.eq.${userId},player2_id.eq.${userId}`)
-            .eq('status', 'finished')
-            .order('created_at', { ascending: false })
-            .limit(20);
+        // 1. Parallel Fetch match data from both tables (limit + buffer to sort later)
+        // Note: For true global pagination we would need a SQL View.
+        // Simplified Strategy: Fetch 'limit' items from BOTH tables, combine, sort, and slice.
+        // This ensures we always have enough items for the page even if one table is empty.
 
-        if (blitzData) {
-            for (const room of blitzData) {
-                const isP1 = room.player1_id === userId;
-                const opponentId = isP1 ? room.player2_id : room.player1_id;
-                let result: 'win' | 'loss' | 'draw' = 'draw';
-                const myFinalHp = isP1 ? room.player1_hp : room.player2_hp;
-                const oppFinalHp = isP1 ? room.player2_hp : room.player1_hp;
-                let isResignation = false;
+        const [blitzRes, grammarRes] = await Promise.all([
+            supabase
+                .from('pvp_word_blitz_rooms')
+                .select('*')
+                .or(`player1_id.eq.${userId},player2_id.eq.${userId}`)
+                .eq('status', 'finished')
+                .order('created_at', { ascending: false })
+                .range(startRange, endRange), // Native Supabase range pagination
 
-                if (room.winner_id === userId) {
-                    result = 'win';
-                    if (oppFinalHp > 0) isResignation = true; // Won but opponent alive = they resigned
-                } else if (room.winner_id === opponentId) {
-                    result = 'loss';
-                    if (myFinalHp > 0) isResignation = true; // Lost but I'm alive = I resigned
-                }
+            supabase
+                .from('pvp_grammar_rooms')
+                .select('*')
+                .or(`player1_id.eq.${userId},player2_id.eq.${userId}`)
+                .eq('status', 'finished')
+                .order('created_at', { ascending: false })
+                .range(startRange, endRange)
+        ]);
 
-                // Fetch opponent name
-                const oppProfile = await getOpponentProfile(opponentId);
+        const rawMatches: { room: any, mode: 'blitz' | 'grammar' }[] = [];
 
-                history.push({
-                    id: room.id,
-                    mode: 'blitz',
-                    opponentId: opponentId,
-                    opponentName: oppProfile?.username || 'Unknown Warrior',
-                    result: result,
-                    score: isP1 ? `${room.player1_hp} - ${room.player2_hp}` : `${room.player2_hp} - ${room.player1_hp}`,
-                    createdAt: room.created_at,
-                    isResignation: isResignation
-                });
+        if (blitzRes.data) blitzRes.data.forEach(r => rawMatches.push({ room: r, mode: 'blitz' }));
+        if (grammarRes.data) grammarRes.data.forEach(r => rawMatches.push({ room: r, mode: 'grammar' }));
+
+        // 2. Sort combined results in memory by creation date DESC
+        rawMatches.sort((a, b) => new Date(b.room.created_at).getTime() - new Date(a.room.created_at).getTime());
+
+        // 3. Slice the page we actually want from the combined result
+        // (Since we grabbed 'limit' from EACH, we might have up to 2*limit items. We only return 'limit'.)
+        const slicedMatches = rawMatches.slice(0, limit);
+        const hasMore = rawMatches.length > limit || (blitzRes.data?.length === limit && grammarRes.data?.length === limit); // Approximated hasMore
+
+        // 4. Collect ALL unique opponent IDs for BATCH fetching (Solves N+1 Problem)
+        const opponentIds = new Set<string>();
+        for (const match of slicedMatches) {
+            const isP1 = match.room.player1_id === userId;
+            const opponentId = isP1 ? match.room.player2_id : match.room.player1_id;
+            opponentIds.add(opponentId);
+        }
+
+        // 5. Batch Fetch Profiles
+        const profileMap = new Map<string, string>();
+        if (opponentIds.size > 0) {
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, username')
+                .in('id', Array.from(opponentIds));
+
+            if (profiles) {
+                profiles.forEach(p => profileMap.set(p.id, p.username));
             }
         }
 
-        // 2. Fetch Grammar History
-        const { data: grammarData } = await supabase
-            .from('pvp_grammar_rooms')
-            .select('*')
-            .or(`player1_id.eq.${userId},player2_id.eq.${userId}`)
-            .eq('status', 'finished')
-            .order('created_at', { ascending: false })
-            .limit(20);
+        // 6. Map to Final Output Format
+        const history: MatchHistoryItem[] = slicedMatches.map(({ room, mode }) => {
+            const isP1 = room.player1_id === userId;
+            const opponentId = isP1 ? room.player2_id : room.player1_id;
+            const opponentName = profileMap.get(opponentId) || (opponentId === '00000000-0000-0000-0000-000000000001' ? 'Trainer Bot' : 'Unknown Warrior');
 
-        if (grammarData) {
-            for (const room of grammarData) {
-                const isP1 = room.player1_id === userId;
-                const opponentId = isP1 ? room.player2_id : room.player1_id;
-                let result: 'win' | 'loss' | 'draw' = 'draw';
-                const myFinalHp = isP1 ? room.player1_hp : room.player2_hp;
-                const oppFinalHp = isP1 ? room.player2_hp : room.player1_hp;
-                let isResignation = false;
+            let result: 'win' | 'loss' | 'draw' = 'draw';
+            const myFinalHp = isP1 ? room.player1_hp : room.player2_hp;
+            const oppFinalHp = isP1 ? room.player2_hp : room.player1_hp;
+            let isResignation = false;
 
-                if (room.winner_id === userId) {
-                    result = 'win';
-                    if (oppFinalHp > 0) isResignation = true;
-                } else if (room.winner_id === opponentId) {
-                    result = 'loss';
-                    if (myFinalHp > 0) isResignation = true;
-                }
-
-                const oppProfile = await getOpponentProfile(opponentId);
-
-                history.push({
-                    id: room.id,
-                    mode: 'grammar',
-                    opponentId: opponentId,
-                    opponentName: oppProfile?.username || 'Unknown Tactician',
-                    result: result,
-                    score: isP1 ? `${room.player1_hp} - ${room.player2_hp}` : `${room.player2_hp} - ${room.player1_hp}`,
-                    createdAt: room.created_at,
-                    isResignation: isResignation
-                });
+            if (room.winner_id === userId) {
+                result = 'win';
+                if (oppFinalHp > 0) isResignation = true;
+            } else if (room.winner_id === opponentId) {
+                result = 'loss';
+                if (myFinalHp > 0) isResignation = true;
             }
-        }
 
-        // Sort combined history
-        return history.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 20);
+            return {
+                id: room.id,
+                mode: mode,
+                opponentId: opponentId,
+                opponentName: opponentName,
+                result: result,
+                score: isP1 ? `${room.player1_hp} - ${room.player2_hp}` : `${room.player2_hp} - ${room.player1_hp}`,
+                createdAt: room.created_at,
+                isResignation: isResignation
+            };
+        });
+
+        return { items: history, hasMore };
 
     } catch (err) {
         console.error('Error fetching history:', err);
-        return [];
+        return { items: [], hasMore: false };
     }
 };
