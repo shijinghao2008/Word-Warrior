@@ -61,6 +61,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
 
   const [activeTab, setActiveTab] = useState('vocab');
   const [isArenaMenuOpen, setIsArenaMenuOpen] = useState(false);
+  const [isBattleBtnPressed, setIsBattleBtnPressed] = useState(false); // New state for bottom button
   const [dbLoaded, setDbLoaded] = useState(false);
 
   // Sync stats from database on load
@@ -383,38 +384,74 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
           </AnimatePresence>
 
           {/* Nav Bar Body - Slightly larger (h-20) for better spacing */}
-          <div className="dark:bg-[#0f172a]/95 bg-white/95 backdrop-blur-xl border dark:border-slate-800 border-slate-200 h-20 rounded-[2.5rem] shadow-2xl flex items-center justify-around px-4 relative overflow-visible">
+          <div
+            className="h-24 flex items-center justify-around px-4 relative overflow-visible"
+            style={{
+              border: '48px solid transparent',
+              borderImage: "url('/assets/ui/menu_panel.png') 112 fill round",
+              imageRendering: 'pixelated',
+              marginTop: '-10px', // Pull up slightly as border is thicker
+              height: '120px'
+            }}
+          >
             {navItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => {
+                onClick={(e) => {
                   if (item.special) {
+                    e.preventDefault();
                     setIsArenaMenuOpen(!isArenaMenuOpen);
                   } else {
                     setActiveTab(item.id);
                     setIsArenaMenuOpen(false);
                   }
                 }}
+                // Bind press events for special button
+                onMouseDown={() => item.special && setIsBattleBtnPressed(true)}
+                onMouseUp={() => item.special && setIsBattleBtnPressed(false)}
+                onMouseLeave={() => item.special && setIsBattleBtnPressed(false)}
+                onTouchStart={() => item.special && setIsBattleBtnPressed(true)}
+                onTouchEnd={() => item.special && setIsBattleBtnPressed(false)}
                 className={`relative flex flex-col items-center justify-center transition-all flex-1 px-1 h-full ${item.special
-                  ? `-mt-12 w-20 h-20 ${getColorClass('bg', 600)} rounded-full text-white border-[6px] dark:border-[#020617] border-slate-50 shadow-2xl z-20 max-w-[80px]`
+                  ? '-mt-16 z-20 max-w-[100px] h-auto' // Adjusted container for image
                   : ''
                   }`}
               >
-                <div className={`transition-all duration-300 ${!item.special && activeTab === item.id ? `${getColorClass('text', 600)} scale-110` : 'text-slate-500'}`}>
-                  {item.icon}
-                </div>
+                {item.special ? (
+                  // Special Image Button
+                  <div className="relative w-24 h-24 flex items-center justify-center transition-transform active:scale-95">
+                    <img
+                      src={isBattleBtnPressed ? "/assets/ui/battle_btn_pressed.png" : "/assets/ui/battle_btn_regular.png"}
+                      className="w-full h-full object-contain drop-shadow-2xl"
+                      style={{ imageRendering: 'pixelated' }}
+                      alt="Battle"
+                    />
+                    {/* Overlay Icon/Text if needed, or just let image be. The image has no text, so we overlay icon */}
+                    <div className={`absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-2 ${isBattleBtnPressed ? 'translate-y-1' : ''}`}>
+                      <Flame size={32} className="text-white drop-shadow-md mb-0.5" />
+                      <span className="text-[10px] font-black italic text-white drop-shadow-md leading-none">FIGHT</span>
+                    </div>
+                  </div>
+                ) : (
+                  // Regular Nav Items
+                  <>
+                    <div className={`transition-all duration-300 ${!item.special && activeTab === item.id ? `${getColorClass('text', 600)} scale-110` : 'text-slate-500'}`}>
+                      {item.icon}
+                    </div>
 
-                <span className={`text-[11px] font-black uppercase mt-1.5 tracking-tighter text-center whitespace-nowrap ${item.special ? 'text-white' : (activeTab === item.id ? getColorClass('text', 600) : 'text-slate-400')
-                  }`}>
-                  {item.label}
-                </span>
+                    <span className={`text-[11px] font-black uppercase mt-1.5 tracking-tighter text-center whitespace-nowrap ${item.special ? 'text-white' : (activeTab === item.id ? getColorClass('text', 600) : 'text-slate-400')
+                      }`}>
+                      {item.label}
+                    </span>
 
-                {/* Active Indicator Dot */}
-                {!item.special && activeTab === item.id && (
-                  <motion.div
-                    layoutId="active-nav"
-                    className={`absolute bottom-2 w-1.5 h-1.5 ${getColorClass('bg', 600)} rounded-full`}
-                  />
+                    {/* Active Indicator Dot */}
+                    {!item.special && activeTab === item.id && (
+                      <motion.div
+                        layoutId="active-nav"
+                        className={`absolute bottom-2 w-1.5 h-1.5 ${getColorClass('bg', 600)} rounded-full`}
+                      />
+                    )}
+                  </>
                 )}
               </button>
             ))}
