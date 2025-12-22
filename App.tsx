@@ -38,6 +38,7 @@ const App: React.FC = () => {
     <ThemeProvider>
       <WarriorProvider>
         <AuthenticatedApp userId={user.id} />
+        <Analytics />
       </WarriorProvider>
     </ThemeProvider>
   );
