@@ -119,7 +119,7 @@ const BattleScene: React.FC<BattleSceneProps> = ({ playerIds, enemyIds, combatEv
             if (enemy) {
                 enemy.setScale(-1, 1); // Face left
                 const sprite = enemy.getByName('sprite') as Phaser.GameObjects.Sprite;
-                if (sprite) sprite.setTint(0xffaaaa);
+                if (sprite) sprite.setTint(0xffffff);
             }
         }
 

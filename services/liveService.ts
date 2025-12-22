@@ -34,62 +34,7 @@ export const resampleAudio = (buffer: Float32Array, fromRate: number, toRate: nu
   return result;
 };
 
-export const startLiveSession = (
-  onFinalFeedback: (fullText: string) => void,
-  systemPrompt: string = "You are a Battle Referee. Evaluate user's English."
-) => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-  let accumulatedText = "";
-  let sessionObj: any = null;
 
-  // Use the specific requested model
-  const sessionPromise = ai.live.connect({
-    model: 'gemini-2.5-flash-native-audio-preview-12-2025',
-    config: {
-      responseModalities: [Modality.AUDIO],
-      systemInstruction: systemPrompt,
-      outputAudioTranscription: {},
-      inputAudioTranscription: {},
-    },
-    callbacks: {
-      onopen: () => console.log('Live Session Connected'),
-      onmessage: async (message: LiveServerMessage) => {
-        // Collect transcription as it streams in
-        if (message.serverContent?.outputTranscription) {
-          accumulatedText += message.serverContent.outputTranscription.text;
-        }
-
-        // Trigger feedback when the model finishes its turn
-        if (message.serverContent?.turnComplete) {
-          console.log("Model Turn Complete. Total text:", accumulatedText);
-          if (accumulatedText.trim()) {
-            onFinalFeedback(accumulatedText);
-            accumulatedText = "";
-          }
-        }
-      },
-      onerror: (e) => console.error('Live Error', e),
-      onclose: () => {
-        console.log('Live Session Closed.');
-      },
-    },
-  });
-
-  sessionPromise.then(s => { sessionObj = s; });
-
-  return {
-    sessionPromise,
-    // Expose method to send text commands (e.g., to trigger evaluation)
-    sendText: (text: string) => {
-      if (sessionObj) {
-        sessionObj.send([{ text }]);
-      }
-    },
-    close: () => {
-      if (sessionObj) sessionObj.close();
-    }
-  };
-};
 
 export async function decodeAudioData(
   data: Uint8Array,

@@ -2,14 +2,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, Shield, User, Zap, Flame, Sword, Target, ShieldCheck, Loader2, XCircle } from 'lucide-react';
-import { startLiveSession, encodeAudio, resampleAudio } from '../services/liveService';
-import { MOCK_GRAMMAR_QUESTIONS, MOCK_VOCAB_CARDS, MOCK_CHANT_QUESTIONS, PVP_MODES } from '../constants.tsx';
+
+import { MOCK_GRAMMAR_QUESTIONS, MOCK_VOCAB_CARDS, PVP_MODES } from '../constants.tsx';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useWarrior } from '../contexts/WarriorContext';
 import { soundService } from '../services/soundService';
 import BattleScene from './Warrior/BattleScene';
-import ChantBattleScene from './Warrior/ChantBattleScene';
 import { supabase } from '../services/supabaseClient';
 import { findWordBlitzMatch, cancelWordBlitzMatchmaking, submitWordBlitzAnswer, getOpponentProfile, checkWordBlitzMatchStatus, abandonWordBlitzMatch, PvPRoom } from '../services/pvpService';
 import { findGrammarMatch, cancelGrammarMatchmaking, submitGrammarAnswer, checkGrammarMatchStatus } from '../services/grammarPvpService';
@@ -72,14 +71,14 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
 
   // Other Modes State
   const [currentGrammarQ, setCurrentGrammarQ] = useState(MOCK_GRAMMAR_QUESTIONS[0]);
-  const [isRecording, setIsRecording] = useState(false);
+
   const audioContextRef = useRef<AudioContext | null>(null);
   const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const currentSessionRef = useRef<any>(null);
 
   // Initial Setup & Cleanup
   useEffect(() => {
-    if (mode === 'pvp_blitz' || mode === 'pvp_tactics' || mode === 'pvp_chant') {
+    if (mode === 'pvp_blitz' || mode === 'pvp_tactics') {
       setPvpState('idle');
 
       // Auto-Resume Check for Blitz
@@ -131,16 +130,13 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
     setPvpState('searching');
     setSearchingTime(0);
 
-    if (mode === 'pvp_chant') {
-      setTimeout(() => startAiMatch(), 1500);
-      return;
-    }
+
 
     // Timer for UI only - Modified to trigger AI
     // Timer for UI only - Modified to trigger AI
     const timer = setInterval(() => {
       setSearchingTime(t => {
-        if (t >= 10) {
+        if (t >= 0) {
           clearInterval(timer); // Stop counting
           // Clear polling interval if exists
           if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
@@ -361,7 +357,6 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
 
     let mockQuestions;
     if (mode === 'pvp_tactics') mockQuestions = MOCK_GRAMMAR_QUESTIONS;
-    else if (mode === 'pvp_chant') mockQuestions = MOCK_CHANT_QUESTIONS;
     else mockQuestions = MOCK_VOCAB_CARDS;
 
     // Shuffle questions
@@ -724,73 +719,13 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
   };
 
   // Chant Logic Preserved...
-  const startChant = async () => {
-    setIsRecording(true);
-    setStatus('INCANTING...');
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const nativeRate = audioContextRef.current.sampleRate;
 
-      const source = audioContextRef.current.createMediaStreamSource(stream);
-      scriptProcessorRef.current = audioContextRef.current.createScriptProcessor(4096, 1, 1);
-
-      const sessionHandles = startLiveSession((fullText: string) => {
-        const scoreMatch = fullText.match(/Score:?\s*(\d+)/i) || fullText.match(/(\d+)/);
-        const score = scoreMatch ? parseInt(scoreMatch[1]) : 0;
-
-        let dmg = 0;
-        let type: 'crit' | undefined;
-
-        if (score >= 90) {
-          dmg = 100;
-          type = 'crit';
-          setStatus('ULTIMATE CHANT!');
-        } else if (score >= 60) {
-          dmg = Math.floor(playerStats.atk * (score / 50));
-          setStatus('CHANT SUCCESS');
-        } else {
-          setStatus('CHANT FAILED');
-        }
-
-        if (dmg > 0) {
-          setEnemyHp(prev => Math.max(0, prev - dmg));
-          triggerEffect(dmg, 'enemy', type);
-        }
-        stopChant();
-      }, "Score a translation of a heroic spell. Respond ONLY with Score: [0-100]");
-
-      currentSessionRef.current = sessionHandles;
-
-      scriptProcessorRef.current.onaudioprocess = (e) => {
-        const inputData = e.inputBuffer.getChannelData(0);
-        const resampled = resampleAudio(inputData, nativeRate, 16000);
-        const l = resampled.length;
-        const int16 = new Int16Array(l);
-        for (let i = 0; i < l; i++) int16[i] = resampled[i] * 32768;
-        const pcmBlob = { data: encodeAudio(new Uint8Array(int16.buffer)), mimeType: 'audio/pcm;rate=16000' };
-
-        sessionHandles.sessionPromise.then((session: any) => session.sendRealtimeInput({ media: pcmBlob }));
-      };
-      source.connect(scriptProcessorRef.current);
-      scriptProcessorRef.current.connect(audioContextRef.current.destination);
-    } catch (e) {
-      setIsRecording(false);
-      setStatus('YOUR TURN');
-    }
-  };
-
-  const stopChant = () => {
-    if (scriptProcessorRef.current) scriptProcessorRef.current.disconnect();
-    if (audioContextRef.current) audioContextRef.current.close();
-    setIsRecording(false);
-  };
 
 
   // ============================================
   // RENDER - MATCHMAKING SCREEN
   // ============================================
-  if ((mode === 'pvp_blitz' || mode === 'pvp_tactics' || mode === 'pvp_chant') && (pvpState === 'idle' || pvpState === 'searching')) {
+  if ((mode === 'pvp_blitz' || mode === 'pvp_tactics') && (pvpState === 'idle' || pvpState === 'searching')) {
     return (
       <div className="h-full flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-xl ww-surface ww-surface--soft rounded-[2.5rem] p-6 md:p-8">
@@ -1008,29 +943,17 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
 
       {/* BATTLE SCENE */}
       <div className="relative w-full max-w-3xl mx-auto -mt-1 md:-mt-4 z-0 px-2 md:px-0">
-        {mode === 'pvp_chant' ? (
-          <ChantBattleScene
-            playerIds={{
-              skinColor: warriorState.appearance.skinColor,
-              hairColor: warriorState.appearance.hairColor,
-              armorId: warriorState.equipped.armor || 'default',
-              weaponId: warriorState.equipped.weapon || 'default'
-            }}
-            enemyIds={enemyAppearance}
-            combatEvent={combatEvent}
-          />
-        ) : (
-          <BattleScene
-            playerIds={{
-              skinColor: warriorState.appearance.skinColor,
-              hairColor: warriorState.appearance.hairColor,
-              armorId: warriorState.equipped.armor || 'default',
-              weaponId: warriorState.equipped.weapon || 'default'
-            }}
-            enemyIds={enemyAppearance}
-            combatEvent={combatEvent}
-          />
-        )}
+        <BattleScene
+          playerIds={{
+            skinColor: warriorState.appearance.skinColor,
+            hairColor: warriorState.appearance.hairColor,
+            armorId: warriorState.equipped.armor || 'default',
+            weaponId: warriorState.equipped.weapon || 'default'
+          }}
+          enemyIds={enemyAppearance}
+          combatEvent={combatEvent}
+        />
+
       </div>
 
       {/* Question + options: sticky on mobile so it's always above the bottom nav */}

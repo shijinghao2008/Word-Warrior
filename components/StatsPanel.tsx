@@ -1,15 +1,16 @@
 
 import React from 'react';
-import { Swords, Shield, Heart, Star } from 'lucide-react';
+import { Swords, Shield, Heart, Star, ShoppingBag, ChevronRight } from 'lucide-react';
 import { UserStats, Rank } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
 
 interface StatsPanelProps {
   stats: UserStats;
   username?: string;
+  onShopClick?: () => void;
 }
 
-const StatsPanel: React.FC<StatsPanelProps> = ({ stats, username }) => {
+const StatsPanel: React.FC<StatsPanelProps> = ({ stats, username, onShopClick }) => {
   const { getColorClass, avatar } = useTheme();
 
   const StatRow = ({
@@ -71,6 +72,31 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ stats, username }) => {
         <StatRow icon={Swords} label="词汇攻击 (ATK)" value={stats.atk} colorClassName="text-blue-600" />
         <StatRow icon={Shield} label="语法防御 (DEF)" value={stats.def} colorClassName="text-emerald-600" />
       </div>
+
+      {/* Shop Button (Big Entry) */}
+      {onShopClick && (
+        <button
+          onClick={onShopClick}
+          className="w-full relative overflow-hidden group rounded-2xl p-4 transition-all active:scale-[0.98] border-2 border-[color:var(--ww-stroke)]"
+          style={{ background: 'var(--ww-surface-0)' }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-orange-400/20 to-rose-400/20 opacity-50 group-hover:opacity-100 transition-opacity" />
+          <div className="relative flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shadow-lg border-2 border-[color:var(--ww-stroke)]">
+                <ShoppingBag size={24} className="text-white" />
+              </div>
+              <div className="text-left">
+                <div className="text-sm font-black ww-ink">商店</div>
+                <div className="text-[10px] ww-muted font-bold uppercase tracking-widest">Upgrade your gear</div>
+              </div>
+            </div>
+            <div className="w-10 h-10 rounded-full bg-white/50 flex items-center justify-center group-hover:translate-x-1 transition-transform border border-[color:var(--ww-stroke-soft)]">
+              <ChevronRight size={20} className="text-[color:var(--ww-stroke)]" />
+            </div>
+          </div>
+        </button>
+      )}
     </div>
   );
 };

@@ -153,6 +153,98 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
       <div className="max-w-3xl mx-auto space-y-8 pt-6 pb-40 px-6">
         <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {TRAINING_MODES.filter(m => m.id !== 'vocab').map((mode) => {
+            // Special rendering for Listening mode
+            if (mode.id === 'listening') {
+              return (
+                <motion.button
+                  key={mode.id}
+                  whileHover={{ scale: 1.05, rotate: -1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setActiveTab(mode.id)}
+                  className="relative aspect-square rounded-[24px] overflow-visible"
+                  style={{
+                    boxShadow: '0 12px 26px rgba(0,0,0,0.18)',
+                  }}
+                >
+                  <img
+                    src="/assets/ui/listening_btn.png"
+                    alt="Listening"
+                    className="w-full h-full object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                </motion.button>
+              );
+            }
+
+            // Special rendering for Oral mode
+            if (mode.id === 'oral') {
+              return (
+                <motion.button
+                  key={mode.id}
+                  whileHover={{ scale: 1.05, rotate: 1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setActiveTab(mode.id)}
+                  className="relative aspect-square rounded-[24px] overflow-visible"
+                  style={{
+                    boxShadow: '0 12px 26px rgba(0,0,0,0.18)',
+                  }}
+                >
+                  <img
+                    src="/assets/ui/oral_btn.png"
+                    alt="Oral"
+                    className="w-full h-full object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                </motion.button>
+              );
+            }
+
+            // Special rendering for Reading mode
+            if (mode.id === 'reading') {
+              return (
+                <motion.button
+                  key={mode.id}
+                  whileHover={{ scale: 1.05, rotate: -1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setActiveTab(mode.id)}
+                  className="relative aspect-square rounded-[24px] overflow-visible"
+                  style={{
+                    boxShadow: '0 12px 26px rgba(0,0,0,0.18)',
+                  }}
+                >
+                  <img
+                    src="/assets/ui/reading_btn.png"
+                    alt="Reading"
+                    className="w-full h-full object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                </motion.button>
+              );
+            }
+
+            // Special rendering for Writing mode
+            if (mode.id === 'writing') {
+              return (
+                <motion.button
+                  key={mode.id}
+                  whileHover={{ scale: 1.05, rotate: 1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setActiveTab(mode.id)}
+                  className="relative aspect-square rounded-[24px] overflow-visible"
+                  style={{
+                    boxShadow: '0 12px 26px rgba(0,0,0,0.18)',
+                  }}
+                >
+                  <img
+                    src="/assets/ui/writing_btn.png"
+                    alt="Writing"
+                    className="w-full h-full object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                </motion.button>
+              );
+            }
+
             const badge = modeStyles[mode.id];
             const statLabel = mode.id === 'oral' ? 'EXP' : (mode.stat || '');
             const title = mode.name.replace('磨炼', '').replace('修行', '').replace('试炼', '').replace('工坊', '');
@@ -221,15 +313,14 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
       {/* 1. Main Stats */}
       <div className="space-y-4">
         <div className="flex items-center justify-end mb-2">
-          <button
-            onClick={() => setShowShop(true)}
-            className="flex items-center gap-2 px-4 py-2 ww-btn ww-btn--accent rounded-2xl text-[10px]"
-          >
-            <ShoppingBag size={14} /> 商城
-          </button>
+          {/* Spacer or empty if nothing else */}
         </div>
         <div className="ww-surface p-6 rounded-[2.5rem] backdrop-blur-sm">
-          <StatsPanel stats={stats} username={user?.user_metadata?.username || 'Word Warrior'} />
+          <StatsPanel
+            stats={stats}
+            username={user?.user_metadata?.username || 'Word Warrior'}
+            onShopClick={() => setShowShop(true)}
+          />
           <div className="mt-8 border-t border-[color:var(--ww-stroke-soft)] pt-8">
             <MatchHistory userId={userId} />
           </div>
@@ -263,21 +354,20 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
       case 'scholar': return renderScholarPath();
       case 'leaderboard': return <div className="pb-32"><Leaderboard /></div>;
       case 'profile': return renderProfile();
-      case 'reading': return <div className="pb-32"><ReadingTraining onSuccess={(exp) => handleGainExp(exp, 'hp')} /></div>;
-      case 'writing': return <div className="pb-32"><WritingTraining onSuccess={(exp) => handleGainExp(exp, 'atk')} /></div>;
-      case 'listening': return <div className="pb-32"><ListeningTraining onSuccess={(exp) => handleGainExp(exp, 'def')} /></div>;
-      case 'oral': return <div className="pb-32"><OralTraining playerStats={stats} onSuccess={(exp) => handleGainExp(exp)} /></div>;
+      case 'reading': return <div className="h-full"><ReadingTraining onSuccess={(exp) => handleGainExp(exp, 'hp')} /></div>;
+      case 'writing': return <div className="h-full"><WritingTraining onSuccess={(exp) => handleGainExp(exp, 'atk')} /></div>;
+      case 'listening': return <div className="h-full"><ListeningTraining onSuccess={(exp) => handleGainExp(exp, 'def')} /></div>;
+      case 'oral': return <div className="h-full"><OralTraining playerStats={stats} onSuccess={(exp) => handleGainExp(exp)} /></div>;
       case 'pvp_blitz':
       case 'pvp_tactics':
-      case 'pvp_chant':
-        return <div className="pb-32"><BattleArena mode={activeTab} playerStats={stats} onVictory={() => setActiveTab('vocab')} onDefeat={() => setActiveTab('vocab')} /></div>;
+        return <div className="h-full"><BattleArena mode={activeTab} playerStats={stats} onVictory={() => setActiveTab('vocab')} onDefeat={() => setActiveTab('vocab')} /></div>;
       case 'admin': return <AdminPanel onUpdateStats={setStats} />;
       default: return <VocabTraining onMastered={(word) => handleGainExp(1, 'atk')} />;
     }
   };
 
   const navActiveId =
-    isArenaMenuOpen || ['pvp_blitz', 'pvp_tactics', 'pvp_chant'].includes(activeTab) ? 'arena' : activeTab;
+    isArenaMenuOpen || ['pvp_blitz', 'pvp_tactics'].includes(activeTab) ? 'arena' : activeTab;
 
   return (
     <div className="h-screen flex flex-col transition-colors duration-500 overflow-hidden ww-app">
@@ -302,7 +392,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
             className="h-full"
           >
             {/* Context Back Button for Sub-pages */}
-            {['reading', 'writing', 'listening', 'oral', 'pvp_blitz', 'pvp_tactics', 'pvp_chant', 'admin'].includes(activeTab) && (
+            {['reading', 'writing', 'listening', 'oral', 'pvp_blitz', 'pvp_tactics', 'admin'].includes(activeTab) && (
               <button
                 onClick={() => {
                   if (['reading', 'writing', 'listening', 'oral'].includes(activeTab)) setActiveTab('scholar');
@@ -410,17 +500,19 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
         )}
       </AnimatePresence>
 
-      <GameBottomNav
-        activeId={navActiveId}
-        onSelect={(id) => {
-          // Keep existing routes/tabs; this is purely a UI replacement.
-          if (id === 'arena') setIsArenaMenuOpen((v) => !v);
-          else {
-            setActiveTab(id);
-            setIsArenaMenuOpen(false);
-          }
-        }}
-      />
+      {!['pvp_blitz', 'pvp_tactics', 'reading', 'writing', 'listening', 'oral'].includes(activeTab) && !showShop && (
+        <GameBottomNav
+          activeId={navActiveId}
+          onSelect={(id) => {
+            // Keep existing routes/tabs; this is purely a UI replacement.
+            if (id === 'arena') setIsArenaMenuOpen((v) => !v);
+            else {
+              setActiveTab(id);
+              setIsArenaMenuOpen(false);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

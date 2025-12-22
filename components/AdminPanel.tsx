@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Users, Database, ShieldAlert, Edit2, Trash2, Plus, Settings, ChevronDown, Check, User, GraduationCap, Palette, Layout, LogOut } from 'lucide-react';
-import { useTheme, THEME_COLORS, ThemeColor } from '../contexts/ThemeContext';
+import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import ListeningManager from './admin/ListeningManager';
@@ -16,7 +16,7 @@ interface AdminPanelProps {
 const AdminPanel: React.FC<AdminPanelProps> = ({ onUpdateStats }) => {
   const {
     themeMode, toggleTheme, setThemeMode,
-    primaryColor, setPrimaryColor,
+    primaryColor,
     avatar, setAvatar,
     grade, setGrade,
     getColorClass
@@ -26,7 +26,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onUpdateStats }) => {
 
   const [isAdminExpanded, setIsAdminExpanded] = useState(false);
   const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'content' | 'listening'>('users');
-  const [isColorMenuOpen, setIsColorMenuOpen] = useState(false);
 
   const users = [
     { id: '1', email: 'player@example.com', level: 12, rank: '白银' },
@@ -118,85 +117,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onUpdateStats }) => {
             </select>
           </div>
 
-          {/* Color Selector (Custom Dropdown) */}
-          <div className="space-y-2 relative z-20">
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-400 block"><Palette size={12} className="inline mr-1" /> 主题色调 (Theme Color)</span>
 
-            <div className="relative">
-              <button
-                onClick={() => setIsColorMenuOpen(!isColorMenuOpen)}
-                className="w-full p-3 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-between group transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-6 h-6 rounded-full ${THEME_COLORS.find(c => c.id === primaryColor)?.class.replace('text-', 'bg-')} shadow-sm border border-black/5 dark:border-white/10`} />
-                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                    {THEME_COLORS.find(c => c.id === primaryColor)?.name}
-                  </span>
-                </div>
-                <ChevronDown size={16} className={`text-slate-400 transition-transform ${isColorMenuOpen ? 'rotate-180' : ''}`} />
-              </button>
-
-              <AnimatePresence>
-                {isColorMenuOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute top-full left-0 right-0 mt-2 p-2 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 max-h-60 overflow-y-auto custom-scrollbar z-50 origin-top"
-                  >
-                    <div className="grid grid-cols-1 gap-1">
-                      {THEME_COLORS.map(color => (
-                        <button
-                          key={color.id}
-                          onClick={() => {
-                            setPrimaryColor(color.id);
-                            setIsColorMenuOpen(false);
-                          }}
-                          className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${primaryColor === color.id ? 'bg-slate-100 dark:bg-slate-700' : 'hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
-                        >
-                          <div className={`w-8 h-8 rounded-full ${color.class.replace('text-', 'bg-')} flex items-center justify-center shadow-sm border border-black/5 dark:border-white/10`}>
-                            {primaryColor === color.id && <Check size={14} className="text-white drop-shadow-md" />}
-                          </div>
-                          <span className={`text-xs font-bold ${primaryColor === color.id ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
-                            {color.name}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
 
           {/* Dark Mode Toggle */}
-          {/* Dark Mode Toggle & System Sync */}
-          <div className="flex items-center justify-between pt-2">
-            <div>
-              <span className="text-xs font-bold text-slate-600 dark:text-slate-400 block">深色模式 (Dark Mode)</span>
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                Currently: {themeMode === 'system' ? 'AUTO (System)' : (themeMode === 'dark' ? 'DARK' : 'LIGHT')}
-              </span>
-            </div>
 
-            <div className="flex items-center gap-2">
-              {themeMode !== 'system' && (
-                <button
-                  onClick={() => setThemeMode('system')}
-                  className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                >
-                  跟随系统
-                </button>
-              )}
-
-              <button
-                onClick={toggleTheme}
-                className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ${themeMode === 'dark' || (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches) ? getColorClass('bg', 600) : 'bg-slate-200'}`}
-              >
-                <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-300 ${themeMode === 'dark' || (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'translate-x-6' : ''}`} />
-              </button>
-            </div>
-          </div>
 
           {/* Logout Button */}
           <div className="pt-2 border-t border-slate-200 dark:border-slate-700/50">

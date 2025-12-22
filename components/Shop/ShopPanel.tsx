@@ -30,7 +30,7 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -42,7 +42,7 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ onClose }) => {
                     <div className="flex items-center gap-3">
                         <ShoppingBag style={{ color: 'var(--ww-stroke)' }} size={24} />
                         <div>
-                            <h2 className="text-xl font-black uppercase tracking-widest ww-ink">军械库 (Armory)</h2>
+                            <h2 className="text-xl font-black uppercase tracking-widest ww-ink">商店</h2>
                             <p className="text-[10px] ww-muted font-bold uppercase tracking-widest">Upgrade Your Gear</p>
                         </div>
                     </div>
