@@ -361,7 +361,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
       case 'oral': return <div className="pb-32"><OralTraining playerStats={stats} onSuccess={(exp) => handleGainExp(exp)} /></div>;
       case 'pvp_blitz':
       case 'pvp_tactics':
-        return <div className="pb-32"><BattleArena mode={activeTab} playerStats={stats} onVictory={() => setActiveTab('vocab')} onDefeat={() => setActiveTab('vocab')} /></div>;
+        return <div className="h-full"><BattleArena mode={activeTab} playerStats={stats} onVictory={() => setActiveTab('vocab')} onDefeat={() => setActiveTab('vocab')} /></div>;
       case 'admin': return <AdminPanel onUpdateStats={setStats} />;
       default: return <VocabTraining onMastered={(word) => handleGainExp(1, 'atk')} />;
     }
@@ -501,17 +501,19 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
         )}
       </AnimatePresence>
 
-      <GameBottomNav
-        activeId={navActiveId}
-        onSelect={(id) => {
-          // Keep existing routes/tabs; this is purely a UI replacement.
-          if (id === 'arena') setIsArenaMenuOpen((v) => !v);
-          else {
-            setActiveTab(id);
-            setIsArenaMenuOpen(false);
-          }
-        }}
-      />
+      {!['pvp_blitz', 'pvp_tactics'].includes(activeTab) && (
+        <GameBottomNav
+          activeId={navActiveId}
+          onSelect={(id) => {
+            // Keep existing routes/tabs; this is purely a UI replacement.
+            if (id === 'arena') setIsArenaMenuOpen((v) => !v);
+            else {
+              setActiveTab(id);
+              setIsArenaMenuOpen(false);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };
