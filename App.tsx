@@ -313,15 +313,14 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
       {/* 1. Main Stats */}
       <div className="space-y-4">
         <div className="flex items-center justify-end mb-2">
-          <button
-            onClick={() => setShowShop(true)}
-            className="flex items-center gap-2 px-4 py-2 ww-btn ww-btn--accent rounded-2xl text-[10px]"
-          >
-            <ShoppingBag size={14} /> 商城
-          </button>
+          {/* Spacer or empty if nothing else */}
         </div>
         <div className="ww-surface p-6 rounded-[2.5rem] backdrop-blur-sm">
-          <StatsPanel stats={stats} username={user?.user_metadata?.username || 'Word Warrior'} />
+          <StatsPanel
+            stats={stats}
+            username={user?.user_metadata?.username || 'Word Warrior'}
+            onShopClick={() => setShowShop(true)}
+          />
           <div className="mt-8 border-t border-[color:var(--ww-stroke-soft)] pt-8">
             <MatchHistory userId={userId} />
           </div>

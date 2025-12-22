@@ -56,9 +56,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     // Support 'system' mode, defaulting to 'system' effectively
-    const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'system'>(() => {
-        return (localStorage.getItem('ww_theme_mode') as 'light' | 'dark' | 'system') || 'system';
-    });
+    const [themeMode, setThemeMode] = useState<'light' | 'dark' | 'system'>('light');
 
     // Track actual visual state
     const [isDarkMode, setIsDarkMode] = useState(false);
@@ -147,14 +145,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const root = document.documentElement;
 
         const applyTheme = (isDark: boolean) => {
-            setIsDarkMode(isDark);
-            if (isDark) {
-                root.classList.add('dark');
-                root.classList.remove('light');
-            } else {
-                root.classList.add('light');
-                root.classList.remove('dark');
-            }
+            setIsDarkMode(false);
+            root.classList.add('light');
+            root.classList.remove('dark');
         };
 
         if (themeMode === 'system') {
