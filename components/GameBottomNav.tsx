@@ -40,8 +40,8 @@ function TrianglePointer({ side }: { side: 'left' | 'right' }) {
         borderTop: '10px solid transparent',
         borderBottom: '10px solid transparent',
         ...(side === 'left'
-          ? { left: -10, borderRight: '14px solid #f7c948' }
-          : { right: -10, borderLeft: '14px solid #f7c948' }),
+          ? { left: -10, borderRight: '14px solid #FCCB59' }
+          : { right: -10, borderLeft: '14px solid #FCCB59' }),
         filter: 'drop-shadow(0 2px 0 rgba(0,0,0,0.7))',
       }}
     />

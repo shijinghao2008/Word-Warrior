@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Swords, Shield, Zap, Heart, Star, Trophy, Sparkles } from 'lucide-react';
+import { Swords, Shield, Heart, Star } from 'lucide-react';
 import { UserStats, Rank } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -12,59 +12,64 @@ interface StatsPanelProps {
 const StatsPanel: React.FC<StatsPanelProps> = ({ stats, username }) => {
   const { getColorClass, avatar } = useTheme();
 
-  const StatItem = ({ icon: Icon, label, value, max, color }: any) => (
-    <div className="space-y-2">
-      <div className="flex justify-between items-end">
-        <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest dark:text-slate-500 text-slate-500">
-          <Icon size={12} className={color} /> {label}
-        </span>
-        <span className="text-xs font-bold dark:text-slate-200 text-slate-800">{value}{max ? ` / ${max}` : ''}</span>
+  const StatRow = ({
+    icon: Icon,
+    label,
+    value,
+    colorClassName,
+  }: {
+    icon: any;
+    label: string;
+    value: React.ReactNode;
+    colorClassName?: string;
+  }) => (
+    <div className="flex items-center justify-between gap-3 py-3 px-4 rounded-2xl bg-[rgba(255,255,255,0.35)] border-2 border-[color:var(--ww-stroke-soft)]">
+      <div className="flex items-center gap-2 min-w-0">
+        <Icon size={14} className={colorClassName ?? 'text-[color:var(--ww-stroke)]'} />
+        <span className="text-[10px] font-black uppercase tracking-widest ww-muted truncate">{label}</span>
       </div>
-      <div className="h-1.5 w-full dark:bg-slate-800 bg-slate-100 rounded-full overflow-hidden border dark:border-slate-800 border-slate-200/50">
-        <div
-          className={`h-full transition-all duration-700 ease-out ${color.replace('text-', 'bg-')} shadow-[0_0_8px_rgba(0,0,0,0.1)]`}
-          style={{ width: `${Math.min((value / (max || 100)) * 100, 100)}%` }}
-        />
-      </div>
+      <div className="text-sm font-black ww-ink tabular-nums">{value}</div>
     </div>
   );
 
   return (
-    <div className="space-y-10">
-      <div className="flex items-center gap-6">
-        <div className={`w-20 h-20 rounded-full dark:bg-white bg-slate-900 flex flex-col items-center justify-center dark:text-black text-white shadow-2xl relative overflow-hidden`}>
+    <div className="space-y-8">
+      {/* Big avatar */}
+      <div className="flex flex-col items-center text-center gap-4">
+        <div
+          className="w-40 h-40 md:w-44 md:h-44 rounded-[999px] bg-[rgba(252,203,89,0.95)] shadow-2xl relative overflow-hidden flex items-center justify-center"
+          style={{ border: '4px solid var(--ww-stroke)' }}
+        >
           {avatar.startsWith('data:image') || avatar.startsWith('http') ? (
             <img src={avatar} alt="User Avatar" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-3xl">{avatar}</span>
+            <span className="text-6xl">{avatar}</span>
           )}
         </div>
+
         <div>
-          <h2 className="text-2xl font-black rpg-font uppercase tracking-tighter dark:text-white text-slate-900">{username || '战士档案'}</h2>
-          <p className={`text-xs font-black tracking-[0.2em] ${getColorClass('text', 500)} uppercase`}>{stats.rank} 阶位</p>
+          <h2 className="text-2xl font-black rpg-font uppercase tracking-tighter ww-ink">
+            {username || '战士档案'}
+          </h2>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        <StatItem icon={Star} label="成长进度" value={stats.exp} max={stats.level * 100} color={getColorClass('text', 500)} />
-        <StatItem icon={Heart} label="生命上限 (HP)" value={stats.hp} max={stats.maxHp} color="text-fuchsia-500" />
-        <StatItem icon={Swords} label="词汇攻击 (ATK)" value={stats.atk} max={stats.level * 20} color="text-blue-500" />
-        <StatItem icon={Shield} label="语法防御 (DEF)" value={stats.def} max={stats.level * 20} color="text-emerald-500" />
-        <StatItem icon={Sparkles} label="口语法力 (Mana)" value={Math.round(stats.crit * 100)} max={100} color="text-amber-500" />
-      </div>
-
-      <div className="flex justify-around items-center py-6 border-t dark:border-slate-800 border-slate-100 pt-8">
-        <div className="text-center">
-          <Trophy size={20} className="mx-auto text-yellow-500 mb-2" />
-          <p className="text-[10px] font-black dark:text-slate-500 text-slate-400 uppercase tracking-widest">排位分</p>
-          <p className="text-lg font-black rpg-font dark:text-white text-slate-900">{stats.rankPoints}</p>
-        </div>
-        <div className="w-px h-10 dark:bg-slate-800 bg-slate-200" />
-        <div className="text-center">
-          <Zap size={20} className={`mx-auto ${getColorClass('text', 400)} mb-2`} />
-          <p className="text-[10px] font-black dark:text-slate-500 text-slate-400 uppercase tracking-widest">连胜数</p>
-          <p className="text-lg font-black rpg-font dark:text-white text-slate-900">{stats.winStreak}</p>
-        </div>
+      {/* Pure numbers (no progress bars) */}
+      <div className="grid grid-cols-1 gap-3">
+        <StatRow
+          icon={Star}
+          label="等级（含成长进度）"
+          value={
+            <span>
+              Lv.{stats.level}{' '}
+              <span className="ww-muted text-[12px] font-black">EXP {stats.exp}/{stats.level * 100}</span>
+            </span>
+          }
+          colorClassName={getColorClass('text', 500)}
+        />
+        <StatRow icon={Heart} label="生命上限 (HP)" value={stats.maxHp} colorClassName="text-fuchsia-600" />
+        <StatRow icon={Swords} label="词汇攻击 (ATK)" value={stats.atk} colorClassName="text-blue-600" />
+        <StatRow icon={Shield} label="语法防御 (DEF)" value={stats.def} colorClassName="text-emerald-600" />
       </div>
     </div>
   );

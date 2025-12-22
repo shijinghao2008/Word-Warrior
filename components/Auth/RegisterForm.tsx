@@ -58,14 +58,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, onSwitchToLogin }
             exit={{ opacity: 0, y: -20 }}
             className="w-full max-w-md"
         >
-            <div className="dark:bg-slate-900/80 bg-white/90 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border dark:border-slate-800 border-slate-200">
+            <div className="ww-surface ww-surface--soft rounded-3xl p-8">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                        <span className="text-2xl font-black text-white">W</span>
+                    <div className="w-16 h-16 ww-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <span className="text-2xl font-black ww-ink">W</span>
                     </div>
-                    <h2 className="text-2xl font-black dark:text-white text-slate-900 mb-2">创建账号</h2>
-                    <p className="text-sm dark:text-slate-400 text-slate-600">加入 Word Warrior 开始学习之旅</p>
+                    <h2 className="text-2xl font-black ww-ink mb-2">创建账号</h2>
+                    <p className="text-sm ww-muted">加入 Word Warrior 开始学习之旅</p>
                 </div>
 
                 {/* Error Message */}
@@ -93,7 +93,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, onSwitchToLogin }
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 dark:bg-slate-800 bg-slate-100 border dark:border-slate-700 border-slate-300 rounded-xl dark:text-white text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                                className="ww-input pl-12 pr-4 py-3"
                                 placeholder="战士名称"
                                 disabled={loading}
                             />
@@ -111,7 +111,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, onSwitchToLogin }
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 dark:bg-slate-800 bg-slate-100 border dark:border-slate-700 border-slate-300 rounded-xl dark:text-white text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                                className="ww-input pl-12 pr-4 py-3"
                                 placeholder="your@email.com"
                                 disabled={loading}
                             />
@@ -129,7 +129,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, onSwitchToLogin }
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 dark:bg-slate-800 bg-slate-100 border dark:border-slate-700 border-slate-300 rounded-xl dark:text-white text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                                className="ww-input pl-12 pr-4 py-3"
                                 placeholder="至少 6 个字符"
                                 disabled={loading}
                             />
@@ -147,7 +147,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, onSwitchToLogin }
                                 type="password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 dark:bg-slate-800 bg-slate-100 border dark:border-slate-700 border-slate-300 rounded-xl dark:text-white text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+                                className="ww-input pl-12 pr-4 py-3"
                                 placeholder="再次输入密码"
                                 disabled={loading}
                             />
@@ -158,7 +158,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, onSwitchToLogin }
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-black uppercase tracking-widest rounded-xl shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="w-full py-4 ww-btn ww-btn--accent flex items-center justify-center gap-2"
                     >
                         {loading ? (
                             <>
@@ -173,11 +173,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSubmit, onSwitchToLogin }
 
                 {/* Switch to Login */}
                 <div className="mt-6 text-center">
-                    <p className="text-sm dark:text-slate-400 text-slate-600">
+                    <p className="text-sm ww-muted">
                         已有账号？{' '}
                         <button
                             onClick={onSwitchToLogin}
-                            className="text-purple-500 hover:text-purple-400 font-bold transition-colors"
+                            className="ww-link transition-colors"
                             disabled={loading}
                         >
                             立即登录

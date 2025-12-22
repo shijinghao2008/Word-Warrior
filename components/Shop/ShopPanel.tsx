@@ -35,24 +35,24 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ onClose }) => {
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="w-full max-w-4xl bg-slate-900 border border-indigo-500/30 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+                className="w-full max-w-4xl ww-surface ww-modal rounded-3xl overflow-hidden flex flex-col"
             >
                 {/* Header */}
-                <div className="p-6 border-b border-indigo-500/20 flex justify-between items-center bg-slate-900/50">
+                <div className="p-6 ww-divider flex justify-between items-center">
                     <div className="flex items-center gap-3">
-                        <ShoppingBag className="text-indigo-400" size={24} />
+                        <ShoppingBag style={{ color: 'var(--ww-stroke)' }} size={24} />
                         <div>
-                            <h2 className="text-xl font-black uppercase tracking-widest text-white">军械库 (Armory)</h2>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Upgrade Your Gear</p>
+                            <h2 className="text-xl font-black uppercase tracking-widest ww-ink">军械库 (Armory)</h2>
+                            <p className="text-[10px] ww-muted font-bold uppercase tracking-widest">Upgrade Your Gear</p>
                         </div>
                     </div>
 
                     <div className="flex items-center gap-6">
-                        <div className="flex items-center gap-2 bg-slate-950 px-4 py-2 rounded-full border border-amber-500/30">
-                            <Coins size={16} className="text-amber-400" />
-                            <span className="text-amber-400 font-bold font-mono">{state.gold} G</span>
+                        <div className="flex items-center gap-2 px-4 py-2 ww-pill ww-pill--accent">
+                            <Coins size={16} className="text-black" />
+                            <span className="text-black font-black font-mono">{state.gold} G</span>
                         </div>
-                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white">
+                        <button onClick={onClose} className="p-2 rounded-full transition-colors ww-btn ww-btn--ink" aria-label="Close shop">
                             <X size={20} />
                         </button>
                     </div>
@@ -60,29 +60,29 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ onClose }) => {
 
                 <div className="flex flex-1 overflow-hidden">
                     {/* Sidebar / Filter */}
-                    <div className="w-16 md:w-20 border-r border-indigo-500/10 bg-slate-950/50 flex flex-col items-center py-6 gap-6">
+                    <div className="w-16 md:w-20 border-r border-[color:var(--ww-stroke-soft)] flex flex-col items-center py-6 gap-6">
                         <button
                             onClick={() => setFilter('all')}
-                            className={`p-3 rounded-xl transition-all ${filter === 'all' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-slate-500 hover:bg-white/5'}`}
+                            className={`p-3 rounded-xl transition-all ${filter === 'all' ? 'ww-btn ww-btn--accent' : 'ww-btn'}`}
                         >
                             <LayoutGridIcon size={20} />
                         </button>
                         <button
                             onClick={() => setFilter('weapon')}
-                            className={`p-3 rounded-xl transition-all ${filter === 'weapon' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-slate-500 hover:bg-white/5'}`}
+                            className={`p-3 rounded-xl transition-all ${filter === 'weapon' ? 'ww-btn ww-btn--accent' : 'ww-btn'}`}
                         >
                             <Sword size={20} />
                         </button>
                         <button
                             onClick={() => setFilter('armor')}
-                            className={`p-3 rounded-xl transition-all ${filter === 'armor' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-slate-500 hover:bg-white/5'}`}
+                            className={`p-3 rounded-xl transition-all ${filter === 'armor' ? 'ww-btn ww-btn--accent' : 'ww-btn'}`}
                         >
                             <Shield size={20} />
                         </button>
                     </div>
 
                     {/* Item Grid */}
-                    <div className="flex-1 overflow-y-auto p-6 bg-slate-900/30">
+                    <div className="flex-1 overflow-y-auto p-6">
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {filteredItems.map(item => {
                                 const isOwned = state.inventory.includes(item.id);
@@ -93,33 +93,30 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ onClose }) => {
                                     <motion.div
                                         key={item.id}
                                         whileHover={{ y: -2 }}
-                                        className={`relative p-4 rounded-2xl border ${isEquipped ? 'border-amber-500 bg-amber-500/5' : isOwned ? 'border-indigo-500/30 bg-slate-800/50' : 'border-slate-800 bg-slate-900'} group`}
+                                        className={`relative p-4 rounded-2xl border-2 group ${isEquipped ? 'bg-[rgba(252,203,89,0.25)] border-[color:var(--ww-stroke)]' : isOwned ? 'bg-[rgba(255,255,255,0.25)] border-[color:var(--ww-stroke-soft)]' : 'bg-[rgba(255,255,255,0.12)] border-[color:var(--ww-stroke-soft)]'}`}
                                     >
-                                        <div className="aspect-square mb-4 rounded-xl bg-slate-950/50 flex items-center justify-center relative overflow-hidden">
+                                        <div className="aspect-square mb-4 rounded-xl bg-[rgba(26,15,40,0.10)] flex items-center justify-center relative overflow-hidden border border-[color:var(--ww-stroke-soft)]">
                                             {/* Placeholder for Phaser Asset preview - using icon for now */}
-                                            {item.type === 'weapon' ? <Sword size={32} className="text-slate-600 group-hover:text-indigo-400 transition-colors" /> : <Shield size={32} className="text-slate-600 group-hover:text-indigo-400 transition-colors" />}
+                                            {item.type === 'weapon' ? <Sword size={32} className="text-[color:var(--ww-stroke)] transition-colors" /> : <Shield size={32} className="text-[color:var(--ww-stroke)] transition-colors" />}
 
                                             {isEquipped && (
-                                                <div className="absolute top-2 right-2 bg-amber-500 text-black text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">
+                                                <div className="absolute top-2 right-2 ww-pill ww-pill--accent text-[10px] font-black px-2 py-0.5 uppercase">
                                                     Equipped
                                                 </div>
                                             )}
                                         </div>
 
-                                        <h3 className="font-bold text-slate-200 text-sm">{item.name}</h3>
-                                        <div className="flex gap-2 text-[10px] text-slate-500 mt-1 uppercase tracking-wider mb-3">
-                                            {item.statBonus.atk && <span className="text-red-400">+ {item.statBonus.atk} ATK</span>}
-                                            {item.statBonus.def && <span className="text-blue-400">+ {item.statBonus.def} DEF</span>}
+                                        <h3 className="font-black ww-ink text-sm">{item.name}</h3>
+                                        <div className="flex gap-2 text-[10px] ww-muted mt-1 uppercase tracking-wider mb-3">
+                                            {item.statBonus.atk && <span className="text-[color:var(--ww-stroke)]">+ {item.statBonus.atk} ATK</span>}
+                                            {item.statBonus.def && <span className="text-[color:var(--ww-stroke)]">+ {item.statBonus.def} DEF</span>}
                                         </div>
 
                                         {isOwned ? (
                                             <button
                                                 onClick={() => handleEquip(item)}
                                                 disabled={isEquipped}
-                                                className={`w-full py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors ${isEquipped
-                                                    ? 'bg-slate-800 text-slate-500 cursor-default'
-                                                    : 'bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400/50'
-                                                    }`}
+                                                className={`w-full py-2 rounded-lg text-xs transition-colors ${isEquipped ? 'ww-btn ww-btn--ink opacity-70 cursor-default' : 'ww-btn ww-btn--accent'}`}
                                             >
                                                 {isEquipped ? '已装备' : '装备'}
                                             </button>
@@ -127,10 +124,7 @@ const ShopPanel: React.FC<ShopPanelProps> = ({ onClose }) => {
                                             <button
                                                 onClick={() => handleBuy(item)}
                                                 disabled={!canAfford}
-                                                className={`w-full py-2 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1 transition-colors ${canAfford
-                                                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white border border-emerald-400/50'
-                                                    : 'bg-slate-800 text-slate-600 cursor-not-allowed'
-                                                    }`}
+                                                className={`w-full py-2 rounded-lg text-xs flex items-center justify-center gap-1 transition-colors ${canAfford ? 'ww-btn ww-btn--accent' : 'ww-btn ww-btn--ink cursor-not-allowed'}`}
                                             >
                                                 {item.price} G
                                             </button>
