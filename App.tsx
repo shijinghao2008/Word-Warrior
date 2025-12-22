@@ -26,6 +26,7 @@ import CustomizerPanel from './components/Shop/CustomizerPanel';
 
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { WarriorProvider } from './contexts/WarriorContext';
+import { GameBottomNav } from './components/GameBottomNav';
 
 const App: React.FC = () => {
   const { user, loading } = useAuth();
@@ -61,7 +62,6 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
 
   const [activeTab, setActiveTab] = useState('vocab');
   const [isArenaMenuOpen, setIsArenaMenuOpen] = useState(false);
-  const [isBattleBtnPressed, setIsBattleBtnPressed] = useState(false); // New state for bottom button
   const [dbLoaded, setDbLoaded] = useState(false);
 
   // Sync stats from database on load
@@ -240,7 +240,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
             </button>
           </div>
         </div>
-        <div className="dark:bg-slate-900/40 bg-white p-6 rounded-[2.5rem] border dark:border-slate-800 border-slate-200 shadow-xl backdrop-blur-sm">
+        <div className="ww-surface p-6 rounded-[2.5rem] backdrop-blur-sm">
           <StatsPanel stats={stats} username={user?.user_metadata?.username || 'Word Warrior'} />
           <div className="mt-8 border-t border-slate-700/50 pt-8">
             <MatchHistory userId={userId} />
@@ -254,10 +254,10 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
       </div>
 
       {/* 3. Settings Button */}
-      <div className="pt-4 border-t dark:border-slate-800 border-slate-100">
+      <div className="pt-4 border-t border-white/10">
         <button
           onClick={() => setActiveTab('admin')}
-          className="w-full py-4 dark:bg-slate-800 bg-slate-100 dark:text-slate-400 text-slate-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:dark:text-white transition-colors"
+          className="w-full py-4 ww-btn ww-btn--ink rounded-2xl text-[10px]"
         >
           系统设置 & 管理
         </button>
@@ -298,16 +298,11 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
     }
   };
 
-  const navItems = [
-    { id: 'vocab', label: '单词', icon: <Swords size={24} /> },
-    { id: 'scholar', label: '学习', icon: <Star size={24} /> },
-    { id: 'arena', label: '对战', icon: <Flame size={32} />, special: true },
-    { id: 'leaderboard', label: '排行', icon: <Trophy size={24} /> },
-    { id: 'profile', label: '档案', icon: <User size={24} /> },
-  ];
+  const navActiveId =
+    isArenaMenuOpen || ['pvp_blitz', 'pvp_tactics', 'pvp_chant'].includes(activeTab) ? 'arena' : activeTab;
 
   return (
-    <div className="h-screen flex flex-col transition-colors duration-500 overflow-hidden dark:bg-[#020617] bg-slate-50">
+    <div className="h-screen flex flex-col transition-colors duration-500 overflow-hidden ww-app">
       {/* Mini Header */}
 
 
@@ -329,7 +324,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
                   if (['reading', 'writing', 'listening', 'oral'].includes(activeTab)) setActiveTab('scholar');
                   else setActiveTab('vocab');
                 }}
-                className="mt-4 mb-2 flex items-center gap-2 text-[12px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600"
+                className="mt-4 mb-2 flex items-center gap-2 text-[12px] font-black uppercase tracking-widest text-white/80 hover:text-white"
               >
                 <X size={12} /> 返回
               </button>
@@ -340,124 +335,57 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
       </main>
 
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-[200] px-4 pb-8 pt-2 pointer-events-none">
-        <div className="max-w-lg mx-auto relative pointer-events-auto">
-
-          {/* Arena Pop-up Menu */}
-          <AnimatePresence>
-            {isArenaMenuOpen && (
-              <>
+      {/* Arena Pop-up Menu (kept from previous behavior) */}
+      <AnimatePresence>
+        {isArenaMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsArenaMenuOpen(false)}
+              className="fixed inset-0 z-[150]"
+            />
+            <div className="fixed bottom-[112px] left-0 right-0 z-[180] flex gap-4 md:gap-8 items-end justify-center w-full px-4">
+              {PVP_MODES.map((mode, idx) => (
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={() => setIsArenaMenuOpen(false)}
-                  className="fixed inset-0 z-[-1]"
-                />
-                <div className="absolute bottom-32 left-1/2 -translate-x-1/2 flex gap-4 md:gap-8 items-end justify-center w-full px-4">
-                  {PVP_MODES.map((mode, idx) => (
-                    <motion.div
-                      key={mode.id}
-                      initial={{ opacity: 0, y: 50, scale: 0.5 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 50, scale: 0.5 }}
-                      transition={{ delay: idx * 0.05, type: 'spring', damping: 15 }}
-                      className="flex flex-col items-center gap-3 flex-1 min-w-[80px]"
-                    >
-                      <button
-                        onClick={() => {
-                          setActiveTab(mode.id);
-                          setIsArenaMenuOpen(false);
-                        }}
-                        className={`w-16 h-16 md:w-20 md:h-20 p-4 md:p-6 rounded-3xl flex items-center justify-center bg-gradient-to-br ${mode.color} border-2 border-white/30 shadow-2xl transition-all active:scale-90 hover:scale-105`}
-                      >
-                        {mode.icon}
-                      </button>
-                      <span className="bg-slate-900/95 dark:bg-white dark:text-black text-white text-[9px] md:text-[11px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest whitespace-nowrap shadow-xl text-center">
-                        {mode.name}
-                      </span>
-                    </motion.div>
-                  ))}
-                </div>
-              </>
-            )}
-          </AnimatePresence>
+                  key={mode.id}
+                  initial={{ opacity: 0, y: 50, scale: 0.5 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 50, scale: 0.5 }}
+                  transition={{ delay: idx * 0.05, type: 'spring', damping: 15 }}
+                  className="flex flex-col items-center gap-3 flex-1 min-w-[80px] max-w-[120px]"
+                >
+                  <button
+                    onClick={() => {
+                      setActiveTab(mode.id);
+                      setIsArenaMenuOpen(false);
+                    }}
+                    className={`w-16 h-16 md:w-20 md:h-20 p-4 md:p-6 rounded-3xl flex items-center justify-center bg-gradient-to-br ${mode.color} border-2 border-white/30 shadow-2xl transition-all active:scale-90 hover:scale-105`}
+                  >
+                    {mode.icon}
+                  </button>
+                  <span className="bg-slate-900/95 dark:bg-white dark:text-black text-white text-[9px] md:text-[11px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest whitespace-nowrap shadow-xl text-center">
+                    {mode.name}
+                  </span>
+                </motion.div>
+              ))}
+            </div>
+          </>
+        )}
+      </AnimatePresence>
 
-          {/* Nav Bar Body - Slightly larger (h-20) for better spacing */}
-          <div
-            className="h-24 flex items-center justify-around px-4 relative overflow-visible"
-            style={{
-              border: '48px solid transparent',
-              borderImage: "url('/assets/ui/menu_panel.png') 112 fill round",
-              imageRendering: 'pixelated',
-              marginTop: '-10px', // Pull up slightly as border is thicker
-              height: '120px'
-            }}
-          >
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={(e) => {
-                  if (item.special) {
-                    e.preventDefault();
-                    setIsArenaMenuOpen(!isArenaMenuOpen);
-                  } else {
-                    setActiveTab(item.id);
-                    setIsArenaMenuOpen(false);
-                  }
-                }}
-                // Bind press events for special button
-                onMouseDown={() => item.special && setIsBattleBtnPressed(true)}
-                onMouseUp={() => item.special && setIsBattleBtnPressed(false)}
-                onMouseLeave={() => item.special && setIsBattleBtnPressed(false)}
-                onTouchStart={() => item.special && setIsBattleBtnPressed(true)}
-                onTouchEnd={() => item.special && setIsBattleBtnPressed(false)}
-                className={`relative flex flex-col items-center justify-center transition-all flex-1 px-1 h-full ${item.special
-                  ? '-mt-16 z-20 max-w-[100px] h-auto' // Adjusted container for image
-                  : ''
-                  }`}
-              >
-                {item.special ? (
-                  // Special Image Button
-                  <div className="relative w-24 h-24 flex items-center justify-center transition-transform active:scale-95">
-                    <img
-                      src={isBattleBtnPressed ? "/assets/ui/battle_btn_pressed.png" : "/assets/ui/battle_btn_regular.png"}
-                      className="w-full h-full object-contain drop-shadow-2xl"
-                      style={{ imageRendering: 'pixelated' }}
-                      alt="Battle"
-                    />
-                    {/* Overlay Icon/Text if needed, or just let image be. The image has no text, so we overlay icon */}
-                    <div className={`absolute inset-0 flex flex-col items-center justify-center pointer-events-none pb-2 ${isBattleBtnPressed ? 'translate-y-1' : ''}`}>
-                      <Flame size={32} className="text-white drop-shadow-md mb-0.5" />
-                      <span className="text-[10px] font-black italic text-white drop-shadow-md leading-none">FIGHT</span>
-                    </div>
-                  </div>
-                ) : (
-                  // Regular Nav Items
-                  <>
-                    <div className={`transition-all duration-300 ${!item.special && activeTab === item.id ? `${getColorClass('text', 600)} scale-110` : 'text-slate-500'}`}>
-                      {item.icon}
-                    </div>
-
-                    <span className={`text-[11px] font-black uppercase mt-1.5 tracking-tighter text-center whitespace-nowrap ${item.special ? 'text-white' : (activeTab === item.id ? getColorClass('text', 600) : 'text-slate-400')
-                      }`}>
-                      {item.label}
-                    </span>
-
-                    {/* Active Indicator Dot */}
-                    {!item.special && activeTab === item.id && (
-                      <motion.div
-                        layoutId="active-nav"
-                        className={`absolute bottom-2 w-1.5 h-1.5 ${getColorClass('bg', 600)} rounded-full`}
-                      />
-                    )}
-                  </>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
+      <GameBottomNav
+        activeId={navActiveId}
+        onSelect={(id) => {
+          // Keep existing routes/tabs; this is purely a UI replacement.
+          if (id === 'arena') setIsArenaMenuOpen((v) => !v);
+          else {
+            setActiveTab(id);
+            setIsArenaMenuOpen(false);
+          }
+        }}
+      />
     </div>
   );
 };

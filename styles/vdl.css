@@ -1,0 +1,177 @@
+/* =========================================================
+   Word Warrior — Visual Design Language (VDL)
+   Style: Vectorized Pop / Soft Cel-Shading
+   Palette:
+   - Primary bg: #5B3C8E -> #4A2F75
+   - Accent:     #FCCB59
+   - Surface:    #FDF6E3
+   Geometry: big rounded corners (12–16px), thick stroke
+   ========================================================= */
+
+:root{
+  --ww-bg-1: #5B3C8E;
+  --ww-bg-2: #4A2F75;
+  --ww-accent: #FCCB59;
+  --ww-surface: #FDF6E3;
+
+  --ww-ink: #1A0F28;
+  --ww-muted: rgba(26, 15, 40, 0.68);
+
+  --ww-stroke: #2B173F;
+  --ww-stroke-soft: rgba(43, 23, 63, 0.22);
+
+  --ww-radius-sm: 12px;
+  --ww-radius: 16px;
+
+  --ww-shadow-pop: 0 10px 0 rgba(0,0,0,0.35), 0 26px 60px rgba(0,0,0,0.40);
+  --ww-shadow-soft: 0 10px 24px rgba(0,0,0,0.25);
+}
+
+html, body, #root { height: 100%; }
+
+body{
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+  background: linear-gradient(135deg, var(--ww-bg-1), var(--ww-bg-2));
+  color: rgba(255,255,255,0.92);
+  overflow: hidden; /* app manages scrolling via inner containers */
+  touch-action: manipulation;
+}
+
+.rpg-font{ font-family: 'Cinzel', serif; }
+
+/* Background wrapper (adds subtle pattern + vignette) */
+.ww-app{
+  background:
+    radial-gradient(1200px 700px at 20% 10%, rgba(252,203,89,0.18), transparent 65%),
+    radial-gradient(900px 600px at 90% 20%, rgba(155, 81, 224, 0.22), transparent 60%),
+    radial-gradient(900px 700px at 60% 90%, rgba(0, 210, 255, 0.10), transparent 60%),
+    linear-gradient(135deg, var(--ww-bg-1), var(--ww-bg-2));
+}
+
+/* Surface / cards */
+.ww-surface{
+  background: var(--ww-surface);
+  color: var(--ww-ink);
+  border: 3px solid var(--ww-stroke);
+  border-radius: var(--ww-radius);
+  box-shadow: var(--ww-shadow-pop);
+  position: relative;
+}
+.ww-surface::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,255,255,0) 38%);
+  mix-blend-mode: soft-light;
+  opacity: 0.9;
+}
+.ww-surface > *{ position: relative; z-index: 1; }
+
+.ww-surface--soft{
+  box-shadow: var(--ww-shadow-soft);
+}
+
+/* Buttons */
+.ww-btn{
+  border: 3px solid var(--ww-stroke);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.35);
+  color: var(--ww-ink);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.35);
+  transition: transform 120ms ease, filter 120ms ease, box-shadow 120ms ease;
+}
+.ww-btn:hover{ filter: brightness(1.03) saturate(1.04); }
+.ww-btn:active{ transform: translateY(2px); box-shadow: 0 4px 0 rgba(0,0,0,0.35); }
+.ww-btn:disabled{ opacity: 0.55; cursor: not-allowed; }
+
+.ww-btn--accent{
+  background: var(--ww-accent);
+}
+.ww-btn--ink{
+  background: var(--ww-stroke);
+  color: rgba(255,255,255,0.96);
+}
+
+.ww-link{
+  color: var(--ww-accent);
+  font-weight: 800;
+}
+.ww-link:hover{ filter: brightness(1.05); }
+
+/* Inputs */
+.ww-input{
+  width: 100%;
+  border-radius: 14px;
+  border: 2px solid var(--ww-stroke-soft);
+  background: rgba(255,255,255,0.72);
+  color: var(--ww-ink);
+  outline: none;
+  transition: box-shadow 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+.ww-input::placeholder{ color: rgba(26,15,40,0.45); }
+.ww-input:focus{
+  border-color: var(--ww-stroke);
+  box-shadow: 0 0 0 5px rgba(252,203,89,0.35);
+  background: rgba(255,255,255,0.88);
+}
+.ww-input:disabled{ opacity: 0.65; cursor: not-allowed; }
+
+/* Pills / badges */
+.ww-pill{
+  border: 2px solid var(--ww-stroke);
+  background: rgba(255,255,255,0.35);
+  color: var(--ww-ink);
+  border-radius: 999px;
+}
+.ww-pill--accent{
+  background: rgba(252,203,89,0.88);
+}
+
+/* Modal */
+.ww-modal{
+  max-height: 90vh;
+}
+.ww-divider{
+  border-bottom: 2px solid var(--ww-stroke-soft);
+}
+
+/* Text helpers */
+.ww-muted{ color: var(--ww-muted); }
+.ww-ink{ color: var(--ww-ink); }
+
+/* Scrollbar (match VDL) */
+.custom-scrollbar::-webkit-scrollbar{ width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track{
+  background: rgba(253,246,227,0.16);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb{
+  background: rgba(252,203,89,0.75);
+  border-radius: 10px;
+  border: 2px solid rgba(43,23,63,0.45);
+}
+
+/* Markdown (plain CSS, no @apply) */
+.markdown-content h1{ font-size: 1.5rem; font-weight: 900; margin: 0 0 0.75rem; }
+.markdown-content h2{ font-size: 1.25rem; font-weight: 900; margin: 1rem 0 0.5rem; }
+.markdown-content p{ margin: 0 0 0.75rem; line-height: 1.7; }
+.markdown-content ul{ margin: 0 0 0.75rem 1.25rem; list-style: disc; }
+.markdown-content ol{ margin: 0 0 0.75rem 1.25rem; list-style: decimal; }
+.markdown-content strong{ font-weight: 900; color: var(--ww-ink); }
+.markdown-content code{
+  background: rgba(26,15,40,0.08);
+  padding: 0 0.35rem;
+  border-radius: 0.4rem;
+  border: 1px solid rgba(43,23,63,0.14);
+  color: #8A2BE2;
+}
+
+
+
+
+

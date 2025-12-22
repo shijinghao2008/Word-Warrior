@@ -40,14 +40,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, onSwitchToRegister }) =
             exit={{ opacity: 0, y: -20 }}
             className="w-full max-w-md"
         >
-            <div className="dark:bg-slate-900/80 bg-white/90 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border dark:border-slate-800 border-slate-200">
+            <div className="ww-surface ww-surface--soft rounded-3xl p-8">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                        <span className="text-2xl font-black text-white">W</span>
+                    <div className="w-16 h-16 ww-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <span className="text-2xl font-black ww-ink">W</span>
                     </div>
-                    <h2 className="text-2xl font-black dark:text-white text-slate-900 mb-2">欢迎回来</h2>
-                    <p className="text-sm dark:text-slate-400 text-slate-600">登录你的 Word Warrior 账号</p>
+                    <h2 className="text-2xl font-black ww-ink mb-2">欢迎回来</h2>
+                    <p className="text-sm ww-muted">登录你的 Word Warrior 账号</p>
                 </div>
 
                 {/* Error Message */}
@@ -75,7 +75,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, onSwitchToRegister }) =
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 dark:bg-slate-800 bg-slate-100 border dark:border-slate-700 border-slate-300 rounded-xl dark:text-white text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                                className="ww-input pl-12 pr-4 py-3"
                                 placeholder="your@email.com"
                                 disabled={loading}
                             />
@@ -93,7 +93,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, onSwitchToRegister }) =
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 dark:bg-slate-800 bg-slate-100 border dark:border-slate-700 border-slate-300 rounded-xl dark:text-white text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                                className="ww-input pl-12 pr-4 py-3"
                                 placeholder="••••••••"
                                 disabled={loading}
                             />
@@ -104,7 +104,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, onSwitchToRegister }) =
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black uppercase tracking-widest rounded-xl shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="w-full py-4 ww-btn ww-btn--accent flex items-center justify-center gap-2"
                     >
                         {loading ? (
                             <>
@@ -119,11 +119,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, onSwitchToRegister }) =
 
                 {/* Switch to Register */}
                 <div className="mt-6 text-center">
-                    <p className="text-sm dark:text-slate-400 text-slate-600">
+                    <p className="text-sm ww-muted">
                         还没有账号？{' '}
                         <button
                             onClick={onSwitchToRegister}
-                            className="text-indigo-500 hover:text-indigo-400 font-bold transition-colors"
+                            className="ww-link transition-colors"
                             disabled={loading}
                         >
                             立即注册
