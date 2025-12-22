@@ -21,9 +21,11 @@ const ReadingList: React.FC<ReadingListProps> = ({ materials, onSelect, complete
 
     if (materials.length === 0) {
         return (
-            <div className="text-center p-8 text-gray-500">
-                <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>No reading materials found.</p>
+            <div className="text-center p-10">
+                <div className="inline-flex items-center gap-2 px-4 py-2 ww-pill" style={{ background: 'rgba(255,255,255,0.25)' }}>
+                    <BookOpen className="w-5 h-5" style={{ color: 'var(--ww-stroke)' }} />
+                    <p className="text-[10px] font-black uppercase tracking-widest ww-muted">暂无阅读材料</p>
+                </div>
             </div>
         );
     }
@@ -45,12 +47,12 @@ const ReadingList: React.FC<ReadingListProps> = ({ materials, onSelect, complete
                     <button
                         key={diff}
                         onClick={() => setSelectedDifficulty(diff)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${selectedDifficulty === diff
-                            ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/25'
-                            : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800 hover:text-white border border-white/5'
+                        className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border-2 ${selectedDifficulty === diff
+                            ? 'bg-[rgba(252,203,89,0.95)] text-black border-[color:var(--ww-stroke)]'
+                            : 'bg-[rgba(255,255,255,0.20)] text-[rgba(26,15,40,0.75)] border-[color:var(--ww-stroke-soft)]'
                             }`}
                     >
-                        {diff === 'All' ? 'All Levels' : diff}
+                        {diff === 'All' ? '全部' : diff}
                     </button>
                 ))}
             </div>
@@ -63,37 +65,41 @@ const ReadingList: React.FC<ReadingListProps> = ({ materials, onSelect, complete
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
                         onClick={() => onSelect(material)}
-                        className="group relative overflow-hidden bg-gray-800/50 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:border-violet-500/50 hover:bg-gray-800/80 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-violet-500/10"
+                        className="ww-surface ww-surface--soft group relative overflow-hidden rounded-[22px] p-6 cursor-pointer transition-transform"
+                        style={{ boxShadow: '0 14px 26px rgba(0,0,0,0.16)' }}
                     >
-                        {/* Hover Effect Gradient */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-violet-500/0 via-violet-500/0 to-violet-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-
                         <div className="flex justify-between items-start mb-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getDifficultyColor(material.difficulty)}`}>
+                            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-2"
+                                style={{ borderColor: 'rgba(43,23,63,0.22)', background: 'rgba(255,255,255,0.25)', color: 'rgba(26,15,40,0.75)' }}
+                            >
                                 {material.difficulty}
                             </span>
                             {material.category && (
-                                <span className="text-xs text-gray-400 font-medium px-2 py-1 bg-white/5 rounded-md">
+                                <span className="text-[10px] font-black ww-muted px-2 py-1 rounded-xl border-2"
+                                    style={{ borderColor: 'rgba(43,23,63,0.18)', background: 'rgba(255,255,255,0.18)' }}
+                                >
                                     {material.category}
                                 </span>
                             )}
                         </div>
 
-                        <h3 className="text-xl font-bold text-white mb-2 group-hover:text-violet-400 transition-colors flex items-center gap-2">
+                        <h3 className="text-lg font-black ww-ink mb-2 flex items-center gap-2">
                             {material.title}
                             {completedIds.has(material.id) && (
-                                <CheckCircle className="w-5 h-5 text-green-500 fill-green-500/10" />
+                                <CheckCircle className="w-5 h-5" style={{ color: 'rgba(16,185,129,0.95)' }} />
                             )}
                         </h3>
 
-                        <p className="text-gray-400 text-sm line-clamp-3 mb-6">
+                        <p className="ww-muted text-sm line-clamp-3 mb-6">
                             {material.content}
                         </p>
 
-                        <div className="flex items-center gap-4 text-xs text-gray-500 border-t border-white/5 pt-4 mt-auto">
+                        <div className="flex items-center gap-4 text-[10px] ww-muted border-t pt-4 mt-auto"
+                            style={{ borderColor: 'rgba(43,23,63,0.16)' }}
+                        >
                             <div className="flex items-center gap-1.5">
-                                <Brain className="w-4 h-4 text-violet-400" />
-                                <span>5 Questions</span>
+                                <Brain className="w-4 h-4" style={{ color: 'var(--ww-stroke)' }} />
+                                <span>{material.questions?.length || 0} 题</span>
                             </div>
                             {/* You could ensure word count or other stats here if available */}
                         </div>

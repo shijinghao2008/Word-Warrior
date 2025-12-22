@@ -24,9 +24,11 @@ const ListeningList: React.FC<ListeningListProps> = ({ materials, onSelect, comp
 
     if (materials.length === 0) {
         return (
-            <div className="text-center p-8 text-gray-500">
-                <Headphones className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>No listening materials found.</p>
+            <div className="text-center p-10">
+                <div className="inline-flex items-center gap-2 px-4 py-2 ww-pill" style={{ background: 'rgba(255,255,255,0.25)' }}>
+                    <Headphones className="w-5 h-5" style={{ color: 'var(--ww-stroke)' }} />
+                    <p className="text-[10px] font-black uppercase tracking-widest ww-muted">暂无听力材料</p>
+                </div>
             </div>
         );
     }
@@ -48,12 +50,12 @@ const ListeningList: React.FC<ListeningListProps> = ({ materials, onSelect, comp
                     <button
                         key={lvl}
                         onClick={() => setSelectedLevel(lvl)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${selectedLevel === lvl
-                            ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/25'
-                            : 'bg-gray-800/50 text-gray-400 hover:bg-gray-800 hover:text-white border border-white/5'
+                        className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all border-2 ${selectedLevel === lvl
+                            ? 'bg-[rgba(252,203,89,0.95)] text-black border-[color:var(--ww-stroke)]'
+                            : 'bg-[rgba(255,255,255,0.20)] text-[rgba(26,15,40,0.75)] border-[color:var(--ww-stroke-soft)]'
                             }`}
                     >
-                        {lvl === 'All' ? 'All Levels' : lvl}
+                        {lvl === 'All' ? '全部' : lvl}
                     </button>
                 ))}
             </div>
@@ -66,33 +68,35 @@ const ListeningList: React.FC<ListeningListProps> = ({ materials, onSelect, comp
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.1 }}
                         onClick={() => onSelect(material)}
-                        className="group relative overflow-hidden bg-gray-800/50 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:border-cyan-500/50 hover:bg-gray-800/80 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-cyan-500/10"
+                        className="ww-surface ww-surface--soft group relative overflow-hidden rounded-[22px] p-6 cursor-pointer transition-transform"
+                        style={{ boxShadow: '0 14px 26px rgba(0,0,0,0.16)' }}
                     >
-                        {/* Hover Effect Gradient */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 via-cyan-500/0 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-
                         <div className="flex justify-between items-start mb-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getLevelColor(material.level || 'Primary')}`}>
+                            <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-2"
+                                style={{ borderColor: 'rgba(43,23,63,0.22)', background: 'rgba(255,255,255,0.25)', color: 'rgba(26,15,40,0.75)' }}
+                            >
                                 {material.level || 'Primary'}
                             </span>
                         </div>
 
-                        <h3 className="text-xl font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors flex items-center gap-2">
+                        <h3 className="text-lg font-black ww-ink mb-2 flex items-center gap-2">
                             {material.title}
                             {completedIds.has(material.id) && (
-                                <CheckCircle className="w-5 h-5 text-green-500 fill-green-500/10" />
+                                <CheckCircle className="w-5 h-5" style={{ color: 'rgba(16,185,129,0.95)' }} />
                             )}
                         </h3>
 
-                        <div className="flex items-center gap-4 text-xs text-gray-500 border-t border-white/5 pt-4 mt-auto">
+                        <div className="flex items-center gap-4 text-[10px] ww-muted border-t pt-4 mt-auto"
+                            style={{ borderColor: 'rgba(43,23,63,0.16)' }}
+                        >
                             <div className="flex items-center gap-1.5">
-                                <Activity className="w-4 h-4 text-cyan-400" />
-                                <span>{material.questions?.length || 0} Questions</span>
+                                <Activity className="w-4 h-4" style={{ color: 'var(--ww-stroke)' }} />
+                                <span>{material.questions?.length || 0} 题</span>
                             </div>
                             {material.audio_url && (
                                 <div className="flex items-center gap-1.5">
-                                    <Music className="w-4 h-4 text-cyan-400" />
-                                    <span>Audio Available</span>
+                                    <Music className="w-4 h-4" style={{ color: 'var(--ww-stroke)' }} />
+                                    <span>含音频</span>
                                 </div>
                             )}
                         </div>
