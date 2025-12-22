@@ -76,8 +76,8 @@ BEGIN
     SET 
         player1_start_points = v_p1_stats.rank_points,
         player2_start_points = v_p2_stats.rank_points,
-        player1_start_tier = v_p1_stats.rank_tier,
-        player2_start_tier = v_p2_stats.rank_tier
+        player1_start_tier = v_p1_stats.rank, -- Use existing rank column
+        player2_start_tier = v_p2_stats.rank  -- Use existing rank column
     WHERE id = p_room_id;
 
     v_match_duration_sec := EXTRACT(EPOCH FROM (v_room.updated_at - v_room.created_at));
@@ -235,7 +235,7 @@ BEGIN
         total_battles = total_battles + 1,
         last_battle_time = NOW(),
         last_daily_win = CASE WHEN v_p1_is_winner AND (last_daily_win IS NULL OR last_daily_win < CURRENT_DATE) THEN CURRENT_DATE ELSE last_daily_win END,
-        rank_tier = CASE 
+        rank = CASE 
             WHEN (GREATEST(0, rank_points + v_p1_change)) >= 4001 THEN 'King'
             WHEN (GREATEST(0, rank_points + v_p1_change)) >= 3001 THEN 'Diamond'
             WHEN (GREATEST(0, rank_points + v_p1_change)) >= 2001 THEN 'Gold'
@@ -252,7 +252,7 @@ BEGIN
         total_battles = total_battles + 1,
         last_battle_time = NOW(),
         last_daily_win = CASE WHEN v_p2_is_winner AND (last_daily_win IS NULL OR last_daily_win < CURRENT_DATE) THEN CURRENT_DATE ELSE last_daily_win END,
-        rank_tier = CASE 
+        rank = CASE 
             WHEN (GREATEST(0, rank_points + v_p2_change)) >= 4001 THEN 'King'
             WHEN (GREATEST(0, rank_points + v_p2_change)) >= 3001 THEN 'Diamond'
             WHEN (GREATEST(0, rank_points + v_p2_change)) >= 2001 THEN 'Gold'
