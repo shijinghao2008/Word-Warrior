@@ -63,7 +63,36 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
   const [isArenaMenuOpen, setIsArenaMenuOpen] = useState(false);
   const [dbLoaded, setDbLoaded] = useState(false);
 
-  // Sync stats ... (unchanged)
+  // Sync stats from database on load
+  useEffect(() => {
+    if (!userId) return;
+
+    const loadStats = async () => {
+      console.log('Fetching user stats from database...');
+      const dbStats = await getUserStats(userId);
+      if (dbStats) {
+        console.log('Stats loaded:', dbStats);
+        setStats(prev => ({ ...prev, ...dbStats }));
+      }
+      setDbLoaded(true);
+    };
+
+    loadStats();
+  }, [userId]);
+
+  // Sync stats to database on change (debounced)
+  useEffect(() => {
+    if (!dbLoaded || !userId) return;
+
+    const timer = setTimeout(() => {
+      console.log('Syncing stats to database:', stats);
+      updateUserStats(userId, stats);
+      // Also update local storage as backup
+      localStorage.setItem(`ww_stats_${userId}`, JSON.stringify(stats));
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [stats, userId, dbLoaded]);
 
   // Handlers ... (unchanged)
 

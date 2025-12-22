@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
-import { Users, Database, ShieldAlert, Edit2, Trash2, Plus, Settings, ChevronDown, Check, User, GraduationCap, Palette, Layout } from 'lucide-react';
+import { Users, Database, ShieldAlert, Edit2, Trash2, Plus, Settings, ChevronDown, Check, User, GraduationCap, Palette, Layout, LogOut } from 'lucide-react';
 import { useTheme, THEME_COLORS, ThemeColor } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import ListeningManager from './admin/ListeningManager';
 
@@ -20,6 +21,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onUpdateStats }) => {
     grade, setGrade,
     getColorClass
   } = useTheme();
+
+  const { signOut } = useAuth();
 
   const [isAdminExpanded, setIsAdminExpanded] = useState(false);
   const [activeAdminTab, setActiveAdminTab] = useState<'users' | 'content' | 'listening'>('users');
@@ -195,11 +198,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onUpdateStats }) => {
             </div>
           </div>
 
+          {/* Logout Button */}
+          <div className="pt-2 border-t border-slate-200 dark:border-slate-700/50">
+            <button
+              onClick={signOut}
+              className="w-full p-3 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-500 hover:bg-red-100 dark:hover:bg-red-500/20 transition-all flex items-center justify-center gap-2 font-black text-xs uppercase tracking-widest"
+            >
+              <LogOut size={16} /> 退出登录 (Sign Out)
+            </button>
+          </div>
+
         </div>
       </section>
 
+
+
       {/* 4. Developer Admin (Collapsed) */}
-      <section className="pt-8">
+      < section className="pt-8" >
         <button
           onClick={() => setIsAdminExpanded(!isAdminExpanded)}
           className="w-full flex items-center justify-between p-4 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
@@ -283,7 +298,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onUpdateStats }) => {
             </motion.div>
           )}
         </AnimatePresence>
-      </section>
+      </section >
     </div >
   );
 };
