@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { motion, type MotionValue } from 'framer-motion';
-import { DockNav, type DockNavItemConfig } from './DockNav';
+import { type DockNavItemConfig } from './DockNav';
 
 type GameBottomNavItem = DockNavItemConfig & {
   disabled?: boolean;
@@ -19,7 +18,7 @@ export type GameBottomNavProps = {
 function TextStroke({ children }: { children: React.ReactNode }) {
   return (
     <span
-      className="text-white font-black tracking-wider select-none"
+      className="text-white font-black tracking-wide select-none"
       style={{
         textShadow:
           '0 2px 0 rgba(0,0,0,0.85), 2px 0 0 rgba(0,0,0,0.85), -2px 0 0 rgba(0,0,0,0.85), 0 -2px 0 rgba(0,0,0,0.85)',
@@ -30,47 +29,27 @@ function TextStroke({ children }: { children: React.ReactNode }) {
   );
 }
 
-function TrianglePointer({ side }: { side: 'left' | 'right' }) {
-  return (
-    <div
-      className="absolute top-1/2 -translate-y-1/2"
-      style={{
-        width: 0,
-        height: 0,
-        borderTop: '10px solid transparent',
-        borderBottom: '10px solid transparent',
-        ...(side === 'left'
-          ? { left: -10, borderRight: '14px solid #FCCB59' }
-          : { right: -10, borderLeft: '14px solid #FCCB59' }),
-        filter: 'drop-shadow(0 2px 0 rgba(0,0,0,0.7))',
-      }}
-    />
-  );
-}
-
 function SpriteIcon({
   src,
   alt,
-  scale,
-  y,
+  size = 72,
 }: {
   src: string;
   alt: string;
-  scale: MotionValue<number>;
-  y: MotionValue<number>;
+  size?: number;
 }) {
   return (
-    <motion.img
+    <img
       draggable={false}
       src={src}
       alt={alt}
       style={{
-        scale,
-        y,
         imageRendering: 'pixelated',
         filter: 'drop-shadow(0 4px 0 rgba(0,0,0,0.65))',
       }}
-      className="w-[56px] h-[56px] select-none pointer-events-none"
+      className="select-none pointer-events-none"
+      width={size}
+      height={size}
     />
   );
 }
@@ -114,75 +93,80 @@ export const GameBottomNav: React.FC<GameBottomNavProps> = ({ activeId, onSelect
   );
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[200] px-3 pb-5 pt-2 pointer-events-none">
+    <div
+      className="fixed bottom-0 left-0 right-0 z-[200] px-3 pt-2 pointer-events-none"
+      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 10px)' }}
+    >
       <div className="max-w-lg mx-auto pointer-events-auto">
-        {/* No bar/frame: icons-only dock */}
-        <DockNav
-          items={items}
-          activeId={activeId}
-          onItemClick={(item) => {
-            const found = items.find((x) => x.id === item.id);
-            if (found?.disabled) return;
-            onSelect(item.id);
+        {/* game-like solid background (non-transparent) */}
+        <div
+          className="relative w-full rounded-[16px] px-2.5 pt-2"
+          style={{
+            paddingBottom: 'calc(env(safe-area-inset-bottom) + 6px)',
+            // lighter “game panel” palette
+            background: 'linear-gradient(180deg, #6e78a0 0%, #4c5474 100%)',
+            border: '2px solid rgba(255,255,255,0.18)',
+            boxShadow:
+              '0 6px 0 rgba(0,0,0,0.28), 0 10px 18px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.22)',
           }}
-          wrapScale={false}
-          baseItemWidth={72}
-          widthBoost={26}
-          influenceRadius={150}
-          maxScale={1.34}
-          lift={8}
-          spring={{ stiffness: 560, damping: 34, mass: 0.7 }}
-          className="w-full flex items-end justify-center gap-2 overflow-visible"
-          itemClassName="relative shrink-0 bg-transparent p-0 outline-none"
-          renderItem={({ item, isActive, scale, y }) => {
-            const cfg = items.find((x) => x.id === item.id);
-            const isPressed = pressedId === item.id;
-            const spriteSrc =
-              item.id === 'arena' && isPressed && cfg?.sprites.pressed
-                ? cfg.sprites.pressed
-                : isActive
-                  ? cfg?.sprites.active
-                  : cfg?.sprites.normal;
+        >
+          {/* icons only: no fisheye, no squeeze, no lift, no spring */}
+          <div className="w-full flex items-end justify-between gap-1">
+            {items.map((item) => {
+              const isActive = item.id === activeId;
+              const isPressed = pressedId === item.id;
+              const spriteSrc =
+                item.id === 'arena' && isPressed && item.sprites.pressed
+                  ? item.sprites.pressed
+                  : isActive
+                    ? item.sprites.active
+                    : item.sprites.normal;
 
-            return (
-              <div className="relative flex flex-col items-center justify-center">
-                <div
-                  className="relative w-[72px] h-[72px] flex items-center justify-center"
+              // Make these three slightly bigger as requested
+              const bigIcon = item.id === 'scholar' || item.id === 'leaderboard' || item.id === 'profile';
+              const iconSize = bigIcon ? 78 : 72;
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className="relative flex-1 flex flex-col items-center justify-center outline-none"
+                  style={{ minWidth: 0 }}
+                  onClick={() => {
+                    if (item.disabled) return;
+                    onSelect(item.id);
+                  }}
                   onPointerDown={() => item.id === 'arena' && setPressedId('arena')}
                   onPointerUp={() => item.id === 'arena' && setPressedId(null)}
                   onPointerCancel={() => item.id === 'arena' && setPressedId(null)}
                   onPointerLeave={() => item.id === 'arena' && setPressedId(null)}
                 >
-                  {/* Side pointers for active (kept, but without any surrounding frame) */}
-                  {isActive && (
-                    <>
-                      <TrianglePointer side="left" />
-                      <TrianglePointer side="right" />
-                    </>
-                  )}
-
-                  {spriteSrc && (
-                    <div
-                      className="relative"
-                      style={{
-                        filter: isActive ? 'drop-shadow(0 0 14px rgba(64, 160, 255, 0.55))' : undefined,
-                      }}
-                    >
-                      <SpriteIcon src={spriteSrc} alt={item.label} scale={scale} y={y} />
-                    </div>
-                  )}
-                </div>
-
-                {/* Only show label for active */}
-                {isActive && (
-                  <div className="mt-2">
-                    <TextStroke>{item.label}</TextStroke>
+                  <div className="relative w-[82px] h-[78px] flex items-center justify-center">
+                    {spriteSrc && (
+                      <div
+                        className="relative"
+                        style={{
+                          filter: isActive ? 'drop-shadow(0 0 16px rgba(64, 160, 255, 0.55))' : undefined,
+                        }}
+                      >
+                        <SpriteIcon src={spriteSrc} alt={item.label} size={iconSize} />
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            );
-          }}
-        />
+
+                  <div className="mt-0 leading-none">
+                    <span
+                      className={`${isActive ? 'opacity-100' : 'opacity-80'} text-[10px]`}
+                      style={{ display: 'inline-block' }}
+                    >
+                      <TextStroke>{item.label}</TextStroke>
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
