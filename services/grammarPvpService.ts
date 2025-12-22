@@ -53,4 +53,67 @@ export const submitGrammarAnswer = async (
     if (error) console.error('Error submitting answer:', error);
 };
 
+
 export { getOpponentProfile };
+
+/**
+ * Polling Fallback for Grammar Mode
+ */
+export const checkGrammarMatchStatus = async (userId: string): Promise<{ roomId: string; role: 'player1' | 'player2' } | null> => {
+    try {
+        // Look for active rooms created in the last 30 seconds involving this user
+        const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+
+        const { data, error } = await supabase
+            .from('pvp_grammar_rooms')
+            .select('id, player1_id, player2_id')
+            .or(`player1_id.eq.${userId},player2_id.eq.${userId}`)
+            .eq('status', 'active')
+            .gt('created_at', thirtySecondsAgo)
+            .single();
+
+        if (error || !data) return null;
+
+        return {
+            roomId: data.id,
+            role: data.player1_id === userId ? 'player1' : 'player2'
+        };
+
+    } catch (err) {
+        console.error('Error polling grammar match status:', err);
+        return null;
+    }
+};
+
+/**
+ * Abandon/Resign a grammar match
+ */
+export const abandonGrammarMatch = async (roomId: string, userId: string) => {
+    try {
+        const { data: room, error: fetchError } = await supabase
+            .from('pvp_grammar_rooms')
+            .select('player1_id, player2_id')
+            .eq('id', roomId)
+            .single();
+
+        if (fetchError || !room) return;
+
+        // winner_id logic: if I (userId) am abandoning, the OTHER player wins.
+        // This function can be called by the leaver OR by the opponent detecting the leaver.
+        const winnerId = room.player1_id === userId ? room.player2_id : room.player1_id;
+
+        const { error } = await supabase
+            .from('pvp_grammar_rooms')
+            .update({
+                status: 'finished',
+                winner_id: winnerId
+            })
+            .eq('id', roomId);
+
+        if (error) console.error('Error abandoning grammar match:', error);
+
+    } catch (err) {
+        console.error('Error in abandonGrammarMatch:', err);
+    }
+};
+

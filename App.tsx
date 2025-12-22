@@ -21,6 +21,7 @@ import AdminPanel from './components/AdminPanel';
 import Leaderboard from './components/Leaderboard';
 import AchievementsPanel from './components/AchievementsPanel';
 import ShopPanel from './components/Shop/ShopPanel';
+import MatchHistory from './components/MatchHistory';
 import CustomizerPanel from './components/Shop/CustomizerPanel';
 
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
@@ -211,6 +212,9 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
         </div>
         <div className="dark:bg-slate-900/40 bg-white p-6 rounded-[2.5rem] border dark:border-slate-800 border-slate-200 shadow-xl backdrop-blur-sm">
           <StatsPanel stats={stats} username={user?.user_metadata?.username || 'Word Warrior'} />
+          <div className="mt-8 border-t border-slate-700/50 pt-8">
+            <MatchHistory userId={userId} />
+          </div>
         </div>
       </div>
 

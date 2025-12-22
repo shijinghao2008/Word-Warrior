@@ -11,7 +11,7 @@ import { soundService } from '../services/soundService';
 import BattleScene from './Warrior/BattleScene';
 import ChantBattleScene from './Warrior/ChantBattleScene';
 import { supabase } from '../services/supabaseClient';
-import { findWordBlitzMatch, cancelWordBlitzMatchmaking, submitWordBlitzAnswer, getOpponentProfile, PvPRoom } from '../services/pvpService';
+import { findWordBlitzMatch, cancelWordBlitzMatchmaking, submitWordBlitzAnswer, getOpponentProfile, checkWordBlitzMatchStatus, abandonWordBlitzMatch, PvPRoom } from '../services/pvpService';
 import { findGrammarMatch, cancelGrammarMatchmaking, submitGrammarAnswer } from '../services/grammarPvpService';
 
 interface BattleArenaProps {
@@ -75,6 +75,20 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
   useEffect(() => {
     if (mode === 'pvp_blitz' || mode === 'pvp_tactics' || mode === 'pvp_chant') {
       setPvpState('idle');
+
+      // Auto-Resume Check for Blitz
+      if (mode === 'pvp_blitz' && userId) {
+        checkWordBlitzMatchStatus(userId).then(match => {
+          if (match) {
+            console.log('Found active match, resuming...', match);
+            setRoomId(match.roomId);
+            setMyRole(match.role);
+            setPvpState('matched');
+            setStatus('RESUMING...');
+            setIsGameConnected(true);
+          }
+        });
+      }
     }
     return () => {
       if (matchmakingChannelRef.current) {
@@ -82,8 +96,18 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
         matchmakingChannelRef.current = null;
       }
       if (roomId && userId) {
-        if (mode === 'pvp_blitz') cancelWordBlitzMatchmaking(userId);
-        if (mode === 'pvp_tactics') cancelGrammarMatchmaking(userId);
+        // Only cancel matchmaking if searching - if playing, consider abandoning? 
+        // Actually this cleanup runs on unmount.
+        // If we are 'playing', we might want to abandon OR just leave connection (reconnectable).
+        // For now, let's just ensure we clean up matchmaking request.
+        if (pvpState === 'searching') {
+          if (mode === 'pvp_blitz') cancelWordBlitzMatchmaking(userId);
+          if (mode === 'pvp_tactics') cancelGrammarMatchmaking(userId);
+        } else if (pvpState === 'playing' || pvpState === 'matched') {
+          // If unmounting while playing, treat as abandon?
+          // Optional: abandonWordBlitzMatch(roomId, userId);
+          // Decided NOT to auto-abandon on tab switch/unmount to allow refresh/resume.
+        }
       }
     };
   }, [mode]);
