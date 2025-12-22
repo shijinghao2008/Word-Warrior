@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
-import { CheckCircle2, RotateCcw, Zap, Target, Loader2, ArrowRight } from 'lucide-react';
+import { CheckCircle2, RotateCcw, Zap, Target, Loader2, ArrowRight, BookOpen, Quote } from 'lucide-react';
 import { getBatchWords, getRandomDistractors, markWordProgress, getUserLearningStats, Word, LearningStats } from '../services/databaseService';
 import { useAuth } from '../contexts/AuthContext';
 import confetti from 'canvas-confetti';
+import { PixelCard, PixelButton, PixelBadge } from './ui/PixelComponents';
 
 // ==========================================
 // TYPES
@@ -43,7 +43,6 @@ const LearningCard: React.FC<LearningCardProps> = ({ word, index, total, onNext 
 
   // Parse meaning - handle both literal \n and actual newlines
   const translations = word.translation?.split(/\\n|\n/).filter(t => t.trim()) || [];
-  const primaryTranslation = translations.map(t => t.trim()).join('\n'); // Join all parts for display
 
   return (
     <motion.div
@@ -55,57 +54,64 @@ const LearningCard: React.FC<LearningCardProps> = ({ word, index, total, onNext 
       initial={{ scale: 0.9, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0.9, opacity: 0 }}
-      className="absolute inset-0 dark:bg-slate-900 bg-white dark:border-slate-800 border-slate-200 rounded-[2.5rem] shadow-2xl flex flex-col items-center justify-between p-8 cursor-pointer active:cursor-grabbing group overflow-visible touch-none"
+      className="absolute inset-0 z-10"
     >
-      {/* Header: Progress */}
-      <div className="w-full flex justify-between items-center text-slate-400 font-bold text-xs tracking-widest uppercase select-none">
-        <span>Learning Phase</span>
-        <span>{index + 1} / {total}</span>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center space-y-8 w-full text-center">
-        <div>
-          <h2 className="text-5xl md:text-6xl font-mono font-bold tracking-tight dark:text-white text-slate-900 mb-2 select-none">
-            {word.word}
-          </h2>
-          {word.phonetic && (
-            <p className="text-lg text-slate-500 font-mono">/{word.phonetic}/</p>
-          )}
+      <PixelCard variant="paper" className="h-full flex flex-col items-center justify-between p-8 cursor-pointer active:cursor-grabbing touch-none select-none">
+        {/* Header: Progress */}
+        <div className="w-full flex justify-between items-center text-slate-800 font-bold text-[10px] tracking-widest uppercase">
+          <span className="flex items-center gap-1"><BookOpen size={12} /> GRIMOIRE PAGE</span>
+          <span className="bg-slate-800 text-white px-2 py-0.5 rounded-sm">{index + 1} / {total}</span>
         </div>
 
-        <div className={`w-full h-[1px] bg-slate-200 dark:bg-slate-800 max-w-[100px] transition-opacity duration-300 ${isRevealed ? 'opacity-100' : 'opacity-0'}`} />
+        {/* Content */}
+        <div className="flex-1 flex flex-col items-center justify-center space-y-6 w-full text-center">
+          <div className="space-y-2">
+            <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
+              {word.word}
+            </h2>
+            {word.phonetic && (
+              <p className="text-sm text-slate-500 font-mono tracking-wide">/{word.phonetic}/</p>
+            )}
+          </div>
 
-        <div className="space-y-2 min-h-[100px] flex flex-col justify-center">
-          {!isRevealed ? (
-            <div className="animate-pulse flex flex-col items-center gap-2 text-slate-400">
-              <span className="text-[10px] uppercase tracking-[0.2em] font-bold">Tap to reveal</span>
-            </div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-2"
-            >
-              {translations.map((line, i) => (
-                <p key={i} className="text-xl md:text-2xl font-bold text-indigo-500 dark:text-indigo-400 leading-snug">
-                  {line.trim()}
-                </p>
-              ))}
-              {word.definition && (
-                <p className="text-sm text-slate-400 max-w-xs mx-auto italic leading-relaxed line-clamp-3 mt-4">
-                  {word.definition.split(/\\n|\n/)[0]}
-                </p>
-              )}
-            </motion.div>
-          )}
+          <div className={`w-full h-[2px] bg-slate-300 max-w-[100px] transition-opacity duration-300 ${isRevealed ? 'opacity-100' : 'opacity-0'}`} />
+
+          <div className="space-y-4 min-h-[120px] flex flex-col justify-center w-full">
+            {!isRevealed ? (
+              <div className="animate-pulse flex flex-col items-center gap-2 text-slate-400">
+                <span className="text-[10px] uppercase tracking-[0.2em] font-bold border-2 border-dashed border-slate-300 px-4 py-2 mt-4">
+                  Tap to decipher
+                </span>
+              </div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-3"
+              >
+                {translations.map((line, i) => (
+                  <p key={i} className="text-xl md:text-2xl font-bold text-indigo-700 leading-snug font-serif">
+                    {line.trim()}
+                  </p>
+                ))}
+                {word.definition && (
+                  <div className="relative mt-4 pt-4 border-t border-slate-200">
+                    <Quote size={12} className="absolute -top-2 left-1/2 -translate-x-1/2 text-slate-300 bg-[#fefce8] px-1" />
+                    <p className="text-xs text-slate-600 italic leading-relaxed line-clamp-3 font-serif">
+                      "{word.definition.split(/\\n|\n/)[0]}"
+                    </p>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Footer: Hint */}
-      <div className="text-slate-300 dark:text-slate-700 text-[10px] uppercase tracking-widest font-black">
-        Swipe to continue
-      </div>
+        {/* Footer: Hint */}
+        <div className="text-slate-400 text-[9px] uppercase tracking-widest font-black flex items-center gap-1 opacity-50">
+          <ArrowRight size={10} /> Swipe to turn page
+        </div>
+      </PixelCard>
     </motion.div>
   );
 };
@@ -122,7 +128,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, onAnswer, questionIndex, 
   const [selectedParams, setSelectedParams] = useState<{ id: string, isCorrect: boolean } | null>(null);
 
   const handleSelect = (option: Word) => {
-    if (selectedParams) return; // Prevent double selecting
+    if (selectedParams) return;
 
     const isCorrect = option.id === question.correctOptionId;
     setSelectedParams({ id: option.id, isCorrect });
@@ -143,46 +149,43 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, onAnswer, questionIndex, 
   };
 
   return (
-    <div className="w-full max-w-md mx-auto space-y-8">
-      {/* Header */}
-      <div className="text-center space-y-2">
-        <span className="text-xs font-black uppercase tracking-widest text-indigo-500">
-          Quiz {questionIndex + 1} / {totalQuestions}
-        </span>
-        <h2 className="text-4xl md:text-5xl font-mono font-bold dark:text-white text-slate-900">
-          {question.word.word}
-        </h2>
+    <div className="w-full max-w-md mx-auto space-y-6">
+      <div className="text-center space-y-2 mb-4">
+        <PixelBadge variant="primary" className="mx-auto">
+          Battle {questionIndex + 1} / {totalQuestions}
+        </PixelBadge>
+        <PixelCard variant="dark" className="p-6 mt-4">
+          <h2 className="text-3xl md:text-4xl font-black text-white tracking-widest uppercase">
+            {question.word.word}
+          </h2>
+        </PixelCard>
       </div>
 
-      {/* Options */}
       <div className="grid grid-cols-1 gap-3">
         {question.options.map((option) => {
           const isSelected = selectedParams?.id === option.id;
           const isCorrectOption = option.id === question.correctOptionId;
           const showCorrectProcess = selectedParams !== null;
 
-          let btnClass = "dark:bg-slate-800 bg-white border-2 dark:border-slate-700 border-slate-200 hover:border-indigo-500 hover:shadow-lg";
+          let variant: 'neutral' | 'success' | 'danger' = 'neutral';
 
           if (showCorrectProcess) {
-            if (isCorrectOption) {
-              btnClass = "bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400";
-            } else if (isSelected && !isCorrectOption) {
-              btnClass = "bg-red-500/10 border-red-500 text-red-600 dark:text-red-400";
-            } else {
-              btnClass = "opacity-50 grayscale";
-            }
+            if (isCorrectOption) variant = 'success';
+            else if (isSelected && !isCorrectOption) variant = 'danger';
           }
 
           return (
-            <button
+            <PixelButton
               key={option.id}
+              variant={variant}
+              fullWidth
               onClick={() => handleSelect(option)}
               disabled={selectedParams !== null}
-              className={`p-5 rounded-2xl text-left font-bold transition-all transform active:scale-[0.98] flex justify-between items-center ${btnClass}`}
+              className={`justify-between h-auto py-4 ${showCorrectProcess && !isCorrectOption && !isSelected ? 'opacity-50' : ''}`}
             >
-              <span className="line-clamp-1">{option.translation?.split('\n')[0]}</span>
+              <span className="text-xs md:text-sm font-bold text-left line-clamp-1">{option.translation?.split('\n')[0]}</span>
               {showCorrectProcess && isCorrectOption && <CheckCircle2 size={18} />}
-            </button>
+            </PixelButton>
           );
         })}
       </div>
@@ -200,15 +203,12 @@ interface VocabTrainingProps {
 
 const VocabTraining: React.FC<VocabTrainingProps> = ({ onMastered }) => {
   const { user } = useAuth();
-
-  // State
   const [mode, setMode] = useState<Mode>('loading');
   const [batch, setBatch] = useState<Word[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [score, setScore] = useState(0);
 
-  // Load Batch
   useEffect(() => {
     if (user) {
       loadBatch();
@@ -218,20 +218,16 @@ const VocabTraining: React.FC<VocabTrainingProps> = ({ onMastered }) => {
   const loadBatch = async () => {
     if (!user) return;
     setMode('loading');
-    console.log('🔄 Loading new batch...');
 
     try {
       const words = await getBatchWords(user.id, 10);
       if (words.length === 0) {
-        // Handle empty state (all words learned)
-        setMode('summary'); // Or a special 'complete' state
+        setMode('summary');
         return;
       }
       setBatch(words);
       setCurrentIndex(0);
       setMode('learning');
-
-      // Pre-generate quiz for this batch
       generateQuiz(words);
     } catch (e) {
       console.error(e);
@@ -242,7 +238,6 @@ const VocabTraining: React.FC<VocabTrainingProps> = ({ onMastered }) => {
     const questions: QuizQuestion[] = [];
     for (const word of words) {
       const distractors = await getRandomDistractors(word.id, 3);
-      // Combine and shuffle
       const options = [...distractors, word].sort(() => Math.random() - 0.5);
       questions.push({
         word,
@@ -253,12 +248,10 @@ const VocabTraining: React.FC<VocabTrainingProps> = ({ onMastered }) => {
     setQuizQuestions(questions);
   };
 
-  // Handlers
   const handleLearningNext = () => {
     if (currentIndex < batch.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
-      // Finished learning batch, start quiz
       setCurrentIndex(0);
       setScore(0);
       setMode('quiz');
@@ -271,12 +264,10 @@ const VocabTraining: React.FC<VocabTrainingProps> = ({ onMastered }) => {
     if (correct) {
       setScore(prev => prev + 1);
       if (user) {
-        // Mark as learned in DB
         await markWordProgress(user.id, currentWord.id, true);
         onMastered(currentWord.word);
       }
     } else {
-      // Log incorrect attempt if needed
       if (user) {
         await markWordProgress(user.id, currentWord.id, false);
       }
@@ -289,12 +280,11 @@ const VocabTraining: React.FC<VocabTrainingProps> = ({ onMastered }) => {
     }
   };
 
-  // Render Logic
   if (mode === 'loading') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] h-[60vh]">
         <Loader2 className="animate-spin text-indigo-500 mb-4" size={40} />
-        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Preparing your session...</p>
+        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] animate-pulse">Summoning Words...</p>
       </div>
     );
   }
@@ -302,8 +292,8 @@ const VocabTraining: React.FC<VocabTrainingProps> = ({ onMastered }) => {
   if (mode === 'learning') {
     const currentWord = batch[currentIndex];
     return (
-      <div className="w-full flex flex-col items-center pt-8">
-        <div className="relative w-full max-w-sm md:max-w-md aspect-[3/4.2]">
+      <div className="w-full flex justify-center pt-8 pb-32">
+        <div className="relative w-full max-w-sm aspect-[3/4.5]">
           <AnimatePresence mode="wait">
             <LearningCard
               key={currentWord.id}
@@ -313,6 +303,9 @@ const VocabTraining: React.FC<VocabTrainingProps> = ({ onMastered }) => {
               onNext={handleLearningNext}
             />
           </AnimatePresence>
+          {/* Back Stack Effect */}
+          <div className="absolute inset-0 translate-x-3 translate-y-3 bg-white border-4 border-black z-0 opacity-50" />
+          <div className="absolute inset-0 translate-x-6 translate-y-6 bg-white border-4 border-black -z-10 opacity-20" />
         </div>
       </div>
     );
@@ -321,7 +314,7 @@ const VocabTraining: React.FC<VocabTrainingProps> = ({ onMastered }) => {
   if (mode === 'quiz') {
     const currentQuestion = quizQuestions[currentIndex];
     return (
-      <div className="w-full h-full min-h-[500px] flex flex-col items-center justify-center pt-8 px-6">
+      <div className="w-full h-full min-h-[500px] flex flex-col items-center justify-center pt-8 px-6 pb-24">
         <QuizCard
           key={currentQuestion.word.id}
           question={currentQuestion}
@@ -336,25 +329,24 @@ const VocabTraining: React.FC<VocabTrainingProps> = ({ onMastered }) => {
   if (mode === 'summary') {
     const percentage = Math.round((score / batch.length) * 100);
     return (
-      <div className="w-full h-full min-h-[500px] flex flex-col items-center justify-center text-center space-y-8 px-6">
-        <div className="relative">
-          <div className="absolute inset-0 bg-indigo-500 blur-[60px] opacity-20 animate-pulse rounded-full" />
-          <div className="relative border-4 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-full p-12 shadow-2xl">
-            <span className="text-6xl font-black text-indigo-500">{percentage}%</span>
-          </div>
-        </div>
+      <div className="w-full h-full min-h-[500px] flex flex-col items-center justify-center text-center space-y-8 px-6 pb-24">
+        <PixelCard variant={percentage >= 80 ? 'primary' : 'secondary'} className="p-8 rotate-3">
+          <div className="text-6xl font-black">{percentage}%</div>
+          <div className="text-[10px] uppercase tracking-widest font-bold mt-2">Accuracy</div>
+        </PixelCard>
 
         <div className="space-y-2">
-          <h2 className="text-3xl font-black rpg-font dark:text-white text-slate-900">Session Complete</h2>
-          <p className="text-slate-400 font-bold">You mastered {score} out of {batch.length} words!</p>
+          <h2 className="text-3xl font-black italic uppercase text-white drop-shadow-[2px_2px_0_#000]">Quest Complete</h2>
+          <p className="text-slate-400 font-bold text-sm">You mastered {score} out of {batch.length} words!</p>
         </div>
 
-        <button
+        <PixelButton
+          size="lg"
+          variant="primary"
           onClick={loadBatch}
-          className="px-10 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full font-black uppercase tracking-widest text-xs transition-all transform active:scale-95 shadow-xl shadow-indigo-500/20 flex items-center gap-2"
         >
-          <RotateCcw size={16} /> Start Next Batch
-        </button>
+          <span className="flex items-center gap-2">START NEXT QUEST <RotateCcw size={16} /></span>
+        </PixelButton>
       </div>
     );
   }

@@ -23,6 +23,7 @@ const WarriorPreview: React.FC<WarriorPreviewProps> = (props) => {
             width: 300,
             height: 300,
             transparent: true,
+            pixelArt: true, // Enable pixel art rendering
             scene: {
                 create: create,
                 update: update

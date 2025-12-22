@@ -12,117 +12,145 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            serif: ['Inter', 'serif'],
+            sans: ['"VT323"', 'monospace'],
+            serif: ['"Press Start 2P"', 'cursive'],
+            pixel: ['"Press Start 2P"', 'cursive'],
+            retro: ['"VT323"', 'monospace'],
           },
+          colors: {
+            pixel: {
+              bg: '#212529',
+              primary: '#3b82f6',
+              border: '#000000',
+            }
+          }
         }
       }
     }
   </script>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap"
-    rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
   <style>
+    /* Global Pixel Reset */
+    :root {
+      --pixel-bg: #212529;
+      --pixel-border: #000;
+    }
+    
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'VT323', monospace;
       overflow: hidden;
-      transition: background-color 0.3s ease;
       touch-action: manipulation;
+      image-rendering: pixelated;
+      background-color: #1a1a1a;
+      /* Subtle Dithering Pattern */
+      background-image: radial-gradient(#2a2a2a 15%, transparent 16%), radial-gradient(#2a2a2a 15%, transparent 16%);
+      background-size: 4px 4px;
+      background-position: 0 0, 2px 2px;
+      color: #e2e8f0;
     }
 
-    .dark body {
-      background-color: #020617;
-      color: #f8fafc;
-    }
-
-    .light body {
-      background-color: #f8fafc;
-      color: #020617;
-    }
-
-    .rpg-font {
-      font-family: 'Cinzel', serif;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 4px;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: rgba(30, 41, 59, 0.2);
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #334155;
-      border-radius: 10px;
-    }
-
-    @keyframes shake {
-
-      0%,
-      100% {
-        transform: translateX(0);
-      }
-
-      25% {
-        transform: translateX(-4px);
-      }
-
-      75% {
-        transform: translateX(4px);
-      }
-    }
-
-    .animate-shake {
-      animation: shake 0.2s cubic-bezier(.36, .07, .19, .97) both;
-    }
-
-    @keyframes float-up {
-      0% {
-        transform: translateY(0);
-        opacity: 1;
-      }
-
-      100% {
-        transform: translateY(-40px);
-        opacity: 0;
-      }
-    }
-
-    .dmg-text {
+    /* Scanline Overlay (Optional, low opacity) */
+    body::after {
+      content: "";
       position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+      background-size: 100% 4px;
       pointer-events: none;
-      animation: float-up 1s forwards;
+      z-index: 9999;
+    }
+
+    h1, h2, h3, h4, h5, h6, .pixel-font {
+      font-family: 'Press Start 2P', cursive;
+    }
+
+    /* Custom Scrollbar for Webkit */
+    ::-webkit-scrollbar {
+      width: 12px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1a1a1a; 
+      border-left: 2px solid #000;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #4f46e5; 
+      border: 2px solid #000;
+      box-shadow: inset -2px -2px 0px rgba(0,0,0,0.2);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4338ca;
+    }
+
+    .custom-scrollbar {
+      scrollbar-width: thin;
+      scrollbar-color: #4f46e5 #1a1a1a;
+    }
+    
+    /* Utility for shaking animation */
+    @keyframes shake {
+      0%, 100% { transform: translate(0, 0); }
+      25% { transform: translate(-2px, 2px); }
+      75% { transform: translate(2px, -2px); }
+    }
+    .animate-shake {
+      animation: shake 0.2s ease-in-out infinite;
+    }
+
+    /* Utility for float up animation */
+    @keyframes float-up {
+      0% { transform: translateY(0); opacity: 1; }
+      100% { transform: translateY(-20px); opacity: 0; }
+    }
+    .animate-float-up {
+      animation: float-up 1s ease-out forwards;
+    }
+
+    /* NES-style Overrides */
+    button, .btn-pixel {
+      border: 4px solid var(--pixel-border);
+      box-shadow: 4px 4px 0px 0px var(--pixel-border);
+      transition: all 0.1s;
+      position: relative;
+    }
+
+    button:active, .btn-pixel:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px 0px var(--pixel-border);
+    }
+
+    input, select, textarea, .input-pixel {
+      border: 4px solid var(--pixel-border);
+      box-shadow: 4px 4px 0px 0px var(--pixel-border);
+      font-family: 'VT323', monospace;
+      font-size: 1.25rem;
+    }
+
+    .card, .pixel-card {
+      border: 4px solid var(--pixel-border);
+      box-shadow: 6px 6px 0px 0px rgba(0,0,0,0.5); 
+    }
+
+    .rounded-xl, .rounded-lg, .rounded-md, .rounded-sm, .rounded {
+      border-radius: 0 !important;
     }
 
     /* Markdown Styling */
-    .markdown-content h1 {
-      @apply text-2xl font-bold mb-4;
-    }
-
-    .markdown-content h2 {
-      @apply text-xl font-bold mb-3;
-    }
-
-    .markdown-content p {
-      @apply mb-4 leading-relaxed;
-    }
-
-    .markdown-content ul {
-      @apply list-disc ml-6 mb-4;
-    }
-
-    .markdown-content ol {
-      @apply list-decimal ml-6 mb-4;
-    }
-
-    .markdown-content strong {
-      @apply font-bold dark:text-white text-slate-900;
-    }
-
-    .markdown-content code {
-      @apply dark:bg-slate-800 bg-slate-200 px-1 rounded text-pink-500 dark:text-pink-400;
-    }
+    .markdown-content h1 { font-size: 1.5rem; margin-bottom: 1rem; font-weight: bold; font-family: 'Press Start 2P', cursive; }
+    .markdown-content h2 { font-size: 1.25rem; margin-bottom: 0.75rem; font-weight: bold; font-family: 'Press Start 2P', cursive; }
+    .markdown-content h3 { font-size: 1.125rem; margin-bottom: 0.5rem; font-weight: bold; font-family: 'Press Start 2P', cursive; }
+    .markdown-content p { margin-bottom: 0.75rem; line-height: 1.625; font-size: 1.25rem; }
+    .markdown-content ul { list-style-type: disc; padding-left: 1.25rem; margin-bottom: 0.75rem; }
+    .markdown-content ol { list-style-type: decimal; margin-left: 1.5rem; margin-bottom: 1rem; }
+    .markdown-content li { margin-bottom: 0.25rem; }
+    .markdown-content strong { font-weight: bold; color: #0f172a; }
+    .dark .markdown-content strong { color: #fff; }
+    .markdown-content code { background-color: #e2e8f0; padding-left: 0.5rem; padding-right: 0.5rem; padding-top: 0.25rem; padding-bottom: 0.25rem; color: #ec4899; border-width: 2px; border-color: #000; }
+    .dark .markdown-content code { background-color: #1e293b; color: #f472b6; }
 
     /* Fix for mobile nav overscroll */
     .ios-pwa-fix {
