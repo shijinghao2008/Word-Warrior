@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Zap, Trophy, Shield, User, ChevronRight, LayoutGrid, Star, Flame, Target, BookOpen, Swords, Mic2, Headphones, PenTool, ShieldCheck, ShoppingBag } from 'lucide-react';
+import { X, Zap, Trophy, Shield, User, ChevronRight, LayoutGrid, Star, Flame, Target, BookOpen, Swords, Mic2, Headphones, PenTool, ShieldCheck, ShoppingBag, Sparkles } from 'lucide-react';
 import { INITIAL_STATS, NAVIGATION, TRAINING_MODES, PVP_MODES } from './constants.tsx';
 import { UserStats, Rank } from './types';
 import { getUserStats, updateUserStats, addMasteredWord } from './services/databaseService';
@@ -23,6 +23,7 @@ import AchievementsPanel from './components/AchievementsPanel';
 import ShopPanel from './components/Shop/ShopPanel';
 import MatchHistory from './components/MatchHistory';
 import CustomizerPanel from './components/Shop/CustomizerPanel';
+import LotteryPanel from './components/Lottery/LotteryPanel';
 
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { WarriorProvider } from './contexts/WarriorContext';
@@ -213,6 +214,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
 
   const [showShop, setShowShop] = useState(false);
   const [showCustomizer, setShowCustomizer] = useState(false);
+  const [showLottery, setShowLottery] = useState(false);
 
   // ... (keep renderScholarPath)
 
@@ -308,6 +310,15 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
 
   return (
     <div className="h-screen flex flex-col transition-colors duration-500 overflow-hidden dark:bg-[#020617] bg-slate-50">
+      {/* Mini Header / Top Controls */}
+      <div className="absolute top-4 right-4 z-[100] flex gap-2">
+        <button
+          onClick={() => setShowLottery(true)}
+          className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all border-2 border-white/20"
+        >
+          <Sparkles size={24} />
+        </button>
+      </div>
       {/* Mini Header */}
 
 
@@ -338,6 +349,11 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {/* Lottery Overlay */}
+      <AnimatePresence>
+        {showLottery && <LotteryPanel onClose={() => setShowLottery(false)} />}
+      </AnimatePresence>
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-[200] px-4 pb-8 pt-2 pointer-events-none">
