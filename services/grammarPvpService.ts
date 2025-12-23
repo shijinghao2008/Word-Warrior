@@ -109,7 +109,8 @@ export const abandonGrammarMatch = async (roomId: string, userId: string) => {
                 status: 'finished',
                 winner_id: winnerId
             })
-            .eq('id', roomId);
+            .eq('id', roomId)
+            .eq('status', 'active'); // Only abandon if active
 
         if (error) console.error('Error abandoning grammar match:', error);
 

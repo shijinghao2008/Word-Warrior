@@ -63,6 +63,8 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
     opponentId: null as string | null // Added opponentId
   });
 
+  const isFinishedRef = useRef(false); // Synchronous guard for finish state
+
   // Sync refs with state
   useEffect(() => {
     stateRef.current.playerHp = playerHp;
@@ -79,6 +81,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
   const audioContextRef = useRef<AudioContext | null>(null);
   const scriptProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const currentSessionRef = useRef<any>(null);
+  const opponentPresenceTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Timeout for detecting missing opponent
 
   // State Refs for Cleanup (Avoid Stale Closures in useEffect)
   const cleanupRef = useRef({
@@ -107,6 +110,15 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
       // Auto-Resume Check for Blitz
       if (mode === 'pvp_blitz' && userId) {
         checkWordBlitzMatchStatus(userId).then(match => {
+          // RACE CONDITION FIX:
+          // Ensure we are not overwriting an ongoing or finished match.
+          // We only auto-resume if we are effectively doing nothing yet.
+          const currentState = cleanupRef.current.pvpState;
+          if (currentState !== 'idle' && currentState !== 'searching') {
+            console.log('🚫 Auto-resume ignored, current state is:', currentState);
+            return;
+          }
+
           if (match) {
             console.log('Found active match, resuming...', match);
             setRoomId(match.roomId);
@@ -114,6 +126,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
             setPvpState('matched');
             setStatus('RESUMING...');
             setIsGameConnected(true);
+            isFinishedRef.current = false; // Reset guard
           }
         });
       }
@@ -177,6 +190,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
     setStatus('SEARCHING...');
     setPvpState('searching');
     setSearchingTime(0);
+    isFinishedRef.current = false; // Reset guard
 
 
 
@@ -197,7 +211,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
 
     // Polling Fallback (Every 2s) - Fix for race condition/missed socket events
     const pollingInterval = setInterval(async () => {
-      if (pvpState !== 'searching') {
+      if (cleanupRef.current.pvpState !== 'searching') {
         clearInterval(pollingInterval);
         return;
       }
@@ -425,6 +439,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
     setPvpState('matched');
     setStatus('OPPONENT FOUND!');
     setIsGameConnected(true); // Always connected for local AI
+    isFinishedRef.current = false; // Reset for AI
 
     // RANDOMIZE ENEMY APPEARANCE
     setEnemyAppearance(generateRandomAppearance());
@@ -534,10 +549,51 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
         .on('presence', { event: 'sync' }, () => {
           const newState = channel.presenceState();
           console.log('👥 Presence State Synced:', newState);
-          // Verify if opponent is here? Not strictly needed, we care about 'leave'
+
+          // Check if opponent is present
+          const currentOpponentId = stateRef.current.opponentId;
+          if (currentOpponentId && !newState[currentOpponentId]) {
+            // Opponent not present! Start grace period timer if not already started
+            if (!opponentPresenceTimeoutRef.current) {
+              console.log('⏳ Opponent not detected in presence. Starting 15s grace period...');
+              opponentPresenceTimeoutRef.current = setTimeout(() => {
+                // Re-check if opponent still missing and game not finished
+                const latestState = channel.presenceState();
+                const stillMissing = !latestState[currentOpponentId];
+                const notFinished = !isFinishedRef.current;
+
+                if (stillMissing && notFinished) {
+                  console.log('🏆 Opponent failed to join within grace period. Claiming victory...');
+                  if (mode === 'pvp_tactics') {
+                    claimGrammarVictory(roomId, userId);
+                  } else {
+                    claimWordBlitzVictory(roomId, userId);
+                  }
+                  setStatus('对手未能加入! 你赢了!');
+                  setPvpState('end');
+                  isFinishedRef.current = true;
+                }
+                opponentPresenceTimeoutRef.current = null;
+              }, 10000);
+            }
+          } else if (currentOpponentId && newState[currentOpponentId]) {
+            // Opponent is present, clear any pending timeout
+            if (opponentPresenceTimeoutRef.current) {
+              console.log('✅ Opponent detected in presence. Clearing grace period timer.');
+              clearTimeout(opponentPresenceTimeoutRef.current);
+              opponentPresenceTimeoutRef.current = null;
+            }
+          }
         })
         .on('presence', { event: 'join' }, ({ key, newPresences }) => {
           console.log('👤 Player Joined:', key, newPresences);
+          const currentOpponentId = stateRef.current.opponentId;
+          // If opponent joined, clear the grace period timeout
+          if (key === currentOpponentId && opponentPresenceTimeoutRef.current) {
+            console.log('✅ Opponent joined! Clearing grace period timer.');
+            clearTimeout(opponentPresenceTimeoutRef.current);
+            opponentPresenceTimeoutRef.current = null;
+          }
         })
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
           console.log('👋 Player Left:', key, leftPresences);
@@ -555,12 +611,20 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
             // Let's check if we have a room.
             console.log('🏆 Opponent disconnected! Claiming victory...');
 
+            // Clear any pending grace period timeout
+            if (opponentPresenceTimeoutRef.current) {
+              clearTimeout(opponentPresenceTimeoutRef.current);
+              opponentPresenceTimeoutRef.current = null;
+            }
+
             if (mode === 'pvp_tactics') {
               claimGrammarVictory(roomId, userId);
             } else {
               claimWordBlitzVictory(roomId, userId);
             }
-            setStatus('OPPONENT LEFT! YOU WIN!');
+            setStatus('对手离开了! 你赢了!');
+            setPvpState('end');
+            isFinishedRef.current = true; // Lock state instantly
           }
         })
         .subscribe(async (status, err) => {
@@ -595,6 +659,11 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
       console.log(`🧹 Cleaning up game subscription for ${roomId}`);
       if (activeChannel) supabase.removeChannel(activeChannel);
       if (retryTimeout) clearTimeout(retryTimeout);
+      // Clear opponent presence timeout on cleanup
+      if (opponentPresenceTimeoutRef.current) {
+        clearTimeout(opponentPresenceTimeoutRef.current);
+        opponentPresenceTimeoutRef.current = null;
+      }
     };
   }, [roomId, myRole]); // Run when we have room AND role
 
@@ -628,6 +697,14 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
     // Current State from Ref to avoid closures
     const current = stateRef.current;
 
+    // GUARD: If we have already finished locally (e.g. via Presence leave), 
+    // ignore any late updates that claim the game is still active.
+    // We update ONLY if the new status is 'finished' (to capture score/details).
+    if (isFinishedRef.current && room.status !== 'finished') {
+      console.log('🛡️ Ignoring active room update because local state is already END.');
+      return;
+    }
+
     // Sync HP
     const myIdsHp = myRole === 'player1' ? room.player1_hp : room.player2_hp;
     const oppIdsHp = myRole === 'player1' ? room.player2_hp : room.player1_hp;
@@ -653,9 +730,20 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
       setQuestions(room.questions);
     }
 
+    // IMMEDIATE OPPONENT ID SET (Fix for early disconnects)
+    if (!current.opponentId) {
+      const oppId = myRole === 'player1' ? room.player2_id : room.player1_id;
+      if (oppId) {
+        console.log('⚡ Fast-setting opponentId from room update:', oppId);
+        setOpponentId(oppId); // Trigger UI update (and eventually ref update via effect)
+        stateRef.current.opponentId = oppId; // Immediate update for event handlers
+      }
+    }
+
     // Verify Game Over
     if (room.status === 'finished') {
       setPvpState('end');
+      isFinishedRef.current = true; // Lock state
       if (room.winner_id === userId) {
         setStatus('YOU WIN!');
         // onVictory(); // Waiting for manual exit
