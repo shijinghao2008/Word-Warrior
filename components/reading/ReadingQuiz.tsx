@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ReadingMaterial, ReadingQuestion } from '../../types';
-import { CheckCircle, XCircle, ChevronRight, RefreshCw, Award } from 'lucide-react';
+import { CheckCircle, XCircle, ChevronRight, RefreshCw, Award, ArrowLeft, Brain } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
@@ -34,7 +34,7 @@ const ReadingQuiz: React.FC<ReadingQuizProps> = ({ material, onBack, onComplete 
     const handleCheckAnswer = () => {
         if (!selectedOption || isAnswered) return;
 
-        const isCorrect = selectedOption === currentQuestion.correctAnswer;
+        const isCorrect = selectedOption === currentQuestion.answer;
         setIsAnswered(true);
 
         if (isCorrect) {
@@ -154,7 +154,7 @@ const ReadingQuiz: React.FC<ReadingQuizProps> = ({ material, onBack, onComplete 
                         let optionClass = "w-full text-left p-4 rounded-xl border-2 transition-all duration-200 flex items-center justify-between group ";
 
                         if (isAnswered) {
-                            if (option === currentQuestion.correctAnswer) {
+                            if (option === currentQuestion.answer) {
                                 optionClass += "border-green-500/50 bg-green-500/10 text-green-100";
                             } else if (option === selectedOption) {
                                 optionClass += "border-red-500/50 bg-red-500/10 text-red-100";
@@ -177,10 +177,10 @@ const ReadingQuiz: React.FC<ReadingQuizProps> = ({ material, onBack, onComplete 
                                 className={optionClass}
                             >
                                 <span>{option}</span>
-                                {isAnswered && option === currentQuestion.correctAnswer && (
+                                {isAnswered && option === currentQuestion.answer && (
                                     <CheckCircle className="w-5 h-5 text-green-400" />
                                 )}
-                                {isAnswered && option === selectedOption && option !== currentQuestion.correctAnswer && (
+                                {isAnswered && option === selectedOption && option !== currentQuestion.answer && (
                                     <XCircle className="w-5 h-5 text-red-400" />
                                 )}
                             </button>
@@ -223,8 +223,8 @@ const ReadingQuiz: React.FC<ReadingQuizProps> = ({ material, onBack, onComplete 
                             onClick={handleCheckAnswer}
                             disabled={!selectedOption}
                             className={`px-8 py-3 rounded-xl font-bold shadow-lg transition-all ${selectedOption
-                                    ? 'bg-white text-gray-900 hover:bg-gray-100 hover:scale-105'
-                                    : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                                ? 'bg-white text-gray-900 hover:bg-gray-100 hover:scale-105'
+                                : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                                 }`}
                         >
                             Check Answer
