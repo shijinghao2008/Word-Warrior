@@ -59,6 +59,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
     enemyHp: 100,
     currentQIndex: 0,
     hasAnswered: false,
+    questions: [] as any[], // Fix for stale closure
     opponentId: null as string | null // Added opponentId
   });
 
@@ -68,8 +69,9 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
     stateRef.current.enemyHp = enemyHp;
     stateRef.current.currentQIndex = currentQIndex;
     stateRef.current.hasAnswered = hasAnsweredCurrent;
+    stateRef.current.questions = questions;
     stateRef.current.opponentId = opponentId;
-  }, [playerHp, enemyHp, currentQIndex, hasAnsweredCurrent, opponentId]);
+  }, [playerHp, enemyHp, currentQIndex, hasAnsweredCurrent, questions, opponentId]);
 
   // Other Modes State
   const [currentGrammarQ, setCurrentGrammarQ] = useState(MOCK_GRAMMAR_QUESTIONS[0]);
@@ -635,10 +637,10 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
 
     // Sync Questions (Append only logic)
     // If server has more questions than us, update local questions
-    if (room.questions && room.questions.length > questions.length) {
-      console.log(`📜 Received new questions! Old: ${questions.length}, New: ${room.questions.length}`);
+    if (room.questions && room.questions.length > current.questions.length) {
+      console.log(`📜 Received new questions! Old: ${current.questions.length}, New: ${room.questions.length}`);
       setQuestions(room.questions);
-    } else if (questions.length === 0 && room.questions && room.questions.length > 0) {
+    } else if (current.questions.length === 0 && room.questions && room.questions.length > 0) {
       // First load
       setQuestions(room.questions);
     }
@@ -675,8 +677,8 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
       // Actually we send the whole row usually.
 
       // But if we are at index 10 (size 10), and questions array is size 10 (0..9). 
-      // Then we are waiting for questions update.
-      const currentList = (room.questions && room.questions.length > questions.length) ? room.questions : questions;
+      // But we are waiting for questions update.
+      const currentList = (room.questions && room.questions.length > current.questions.length) ? room.questions : current.questions;
       const q = currentList[room.current_question_index];
 
       if (q) {
@@ -685,7 +687,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
         setStatus('V.S.');
       } else {
         // Question not here yet! UI Lock.
-        console.warn('⚠️ Current question index out of bounds, waiting for question data...');
+        console.warn(`⚠️ Current question index ${room.current_question_index} out of bounds (Questions: ${currentList.length}), waiting for question data...`);
         setStatus('LOADING NEXT ROUND...');
         // We do NOT set pvpState to 'playing' here to prevent timer start etc.
         // Or we set it but UI disables interaction.
