@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, Shield, User, Zap, Flame, Sword, Target, ShieldCheck, Loader2, XCircle } from 'lucide-react';
 
@@ -961,6 +961,22 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
   // ============================================
   // RENDER - MATCHMAKING SCREEN
   // ============================================
+  // ============================================
+  // MEMOIZED PROPS (Must be unconditional)
+  // ============================================
+  const memoizedPlayerIds = useMemo(() => ({
+    skinColor: warriorState.appearance.skinColor,
+    hairColor: warriorState.appearance.hairColor,
+    armorId: warriorState.equipped.armor || 'default',
+    weaponId: warriorState.equipped.weapon || 'default',
+    modelColor: warriorState.appearance.modelColor
+  }), [warriorState.appearance, warriorState.equipped]);
+
+  const memoizedEnemyIds = useMemo(() => enemyAppearance, [enemyAppearance]);
+
+  // ============================================
+  // RENDER - MATCHMAKING SCREEN
+  // ============================================
   if ((mode === 'pvp_blitz' || mode === 'pvp_tactics') && (pvpState === 'idle' || pvpState === 'searching')) {
     return (
       <div className="h-full flex items-center justify-center px-4 py-8">
@@ -1180,14 +1196,8 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
       {/* BATTLE SCENE */}
       <div className="relative w-full max-w-3xl mx-auto -mt-1 md:-mt-4 z-0 px-2 md:px-0">
         <BattleScene
-          playerIds={{
-            skinColor: warriorState.appearance.skinColor,
-            hairColor: warriorState.appearance.hairColor,
-            armorId: warriorState.equipped.armor || 'default',
-            weaponId: warriorState.equipped.weapon || 'default',
-            modelColor: warriorState.appearance.modelColor
-          }}
-          enemyIds={enemyAppearance}
+          playerIds={memoizedPlayerIds}
+          enemyIds={memoizedEnemyIds}
           combatEvent={combatEvent}
         />
 
@@ -1227,8 +1237,8 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
               exit={{ opacity: 0, y: -6, scale: 0.98 }}
               transition={{ duration: 0.16 }}
               className={`absolute top-3 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded-full text-[12px] font-black tracking-widest shadow-lg border ${choiceFeedback.kind === 'bad'
-                  ? 'bg-red-500 text-white border-red-200'
-                  : 'bg-emerald-500 text-white border-emerald-200'
+                ? 'bg-red-500 text-white border-red-200'
+                : 'bg-emerald-500 text-white border-emerald-200'
                 }`}
             >
               {choiceFeedback.text}

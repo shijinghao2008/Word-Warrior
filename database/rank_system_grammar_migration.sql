@@ -12,11 +12,11 @@ ADD COLUMN IF NOT EXISTS player2_start_tier TEXT,      -- Snapshot
 ADD COLUMN IF NOT EXISTS match_details JSONB;          -- Detailed breakdown
 
 -- 2. Core Function: Process Match Result (Grammar Version)
--- Exact duplicate of process_pvp_match_result but for pvp_grammar_rooms table
+-- UNIFIED with Vocabulary Blitz Logic
 CREATE OR REPLACE FUNCTION process_grammar_match_result(p_room_id UUID)
 RETURNS VOID
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY DEFINER 
 AS $$
 DECLARE
     v_room RECORD;
@@ -33,37 +33,43 @@ DECLARE
     v_p1_base INTEGER;
     v_p1_hp_bonus INTEGER := 0;
     v_p1_streak_bonus INTEGER := 0;
-    v_p1_final_hp INTEGER;
+    v_p1_protection INTEGER := 0; 
+    v_p1_final_hp INTEGER; 
     
     -- P2 specifics
     v_p2_is_winner BOOLEAN;
     v_p2_base INTEGER;
     v_p2_hp_bonus INTEGER := 0;
     v_p2_streak_bonus INTEGER := 0;
+    v_p2_protection INTEGER := 0; 
     v_p2_final_hp INTEGER;
     
     -- Constants / Config
     v_match_duration_sec INTEGER;
     v_is_instant_kill BOOLEAN := FALSE;
     
+    -- Details JSON
     v_details JSONB;
 BEGIN
     -- Fetch Room (FROM pvp_grammar_rooms)
     SELECT * INTO v_room FROM pvp_grammar_rooms WHERE id = p_room_id;
     
     IF v_room.status != 'finished' OR v_room.winner_id IS NULL THEN
-        RETURN;
+        RETURN; 
     END IF;
     
+    -- If already processed (prevent double counting)
     IF v_room.player1_score_change IS NOT NULL THEN
         RETURN;
     END IF;
 
     v_winner_id := v_room.winner_id;
     
+    -- Fetch Stats
     SELECT * INTO v_p1_stats FROM user_stats WHERE user_id = v_room.player1_id;
     SELECT * INTO v_p2_stats FROM user_stats WHERE user_id = v_room.player2_id;
     
+    -- Initialize if missing
     IF v_p1_stats IS NULL THEN
         INSERT INTO user_stats (user_id) VALUES (v_room.player1_id) RETURNING * INTO v_p1_stats;
     END IF;
@@ -76,10 +82,11 @@ BEGIN
     SET 
         player1_start_points = v_p1_stats.rank_points,
         player2_start_points = v_p2_stats.rank_points,
-        player1_start_tier = v_p1_stats.rank, -- Use existing rank column
-        player2_start_tier = v_p2_stats.rank  -- Use existing rank column
+        player1_start_tier = v_p1_stats.rank, 
+        player2_start_tier = v_p2_stats.rank 
     WHERE id = p_room_id;
 
+    -- Calculate Duration
     v_match_duration_sec := EXTRACT(EPOCH FROM (v_room.updated_at - v_room.created_at));
     
     IF v_match_duration_sec < 30 THEN
@@ -94,29 +101,39 @@ BEGIN
     
     -- 1. Base Score (Win/Loss)
     IF v_p1_is_winner THEN
+        -- Standard Win Logic
         IF v_p2_stats.rank_points > v_p1_stats.rank_points + 200 THEN v_p1_base := 35;
         ELSIF v_p2_stats.rank_points < v_p1_stats.rank_points - 200 THEN v_p1_base := 25;
         ELSE v_p1_base := 30; END IF;
 
+        -- Tiered Base
         IF v_p1_stats.rank_points <= 1000 THEN v_p1_base := 40;
         ELSIF v_p1_stats.rank_points <= 2000 THEN v_p1_base := 40;
         ELSIF v_p1_stats.rank_points <= 3000 THEN v_p1_base := 30;
         ELSIF v_p1_stats.rank_points <= 4000 THEN v_p1_base := 25;
         ELSE v_p1_base := 20; END IF;
         
-        IF v_p2_stats.rank_points > v_p1_stats.rank_points + 100 THEN v_p1_base := v_p1_base + 5;
-        ELSIF v_p2_stats.rank_points < v_p1_stats.rank_points - 100 THEN v_p1_base := GREATEST(5, v_p1_base - 5);
+        -- Override based on MAJOR diff (Anti-Farming / Stricter High Rank Logic)
+        IF v_p1_stats.rank_points > v_p2_stats.rank_points + 2000 THEN 
+             v_p1_base := 1; 
+        ELSIF v_p1_stats.rank_points > v_p2_stats.rank_points + 1000 THEN
+             v_p1_base := GREATEST(5, v_p1_base - 15);
+        ELSIF v_p1_stats.rank_points > v_p2_stats.rank_points + 500 THEN
+             v_p1_base := GREATEST(10, v_p1_base - 5);
         END IF;
-    ELSE
-        IF v_p1_stats.rank_points <= 1000 THEN v_p1_base := 0;
-        ELSIF v_p1_stats.rank_points <= 2000 THEN v_p1_base := -10;
-        ELSIF v_p1_stats.rank_points <= 3000 THEN v_p1_base := -20;
-        ELSIF v_p1_stats.rank_points <= 4000 THEN v_p1_base := -25;
-        ELSE v_p1_base := -30; END IF;
 
+    ELSE
+        -- LOSS LOGIC
+        IF v_p1_stats.rank_points <= 1000 THEN v_p1_base := 0; 
+        ELSIF v_p1_stats.rank_points <= 2000 THEN v_p1_base := -10;
+        ELSIF v_p1_stats.rank_points <= 3000 THEN v_p1_base := -25;
+        ELSIF v_p1_stats.rank_points <= 4000 THEN v_p1_base := -30;
+        ELSE v_p1_base := -35; END IF;
+
+        -- Diff Adjustments on Loss
         IF v_p1_base < 0 THEN
-            IF v_p2_stats.rank_points > v_p1_stats.rank_points + 100 THEN v_p1_base := v_p1_base + 5;
-            ELSIF v_p2_stats.rank_points < v_p1_stats.rank_points - 100 THEN v_p1_base := v_p1_base - 5;
+            IF v_p2_stats.rank_points > v_p1_stats.rank_points + 500 THEN v_p1_base := v_p1_base + 5; 
+            ELSIF v_p2_stats.rank_points < v_p1_stats.rank_points - 500 THEN v_p1_base := v_p1_base - 5; 
             END IF;
         END IF;
     END IF;
@@ -129,20 +146,49 @@ BEGIN
         ELSIF v_p1_final_hp < 20 THEN v_p1_hp_bonus := 2;
         END IF;
         
-        IF v_p1_stats.rank_points > 3000 AND v_p1_stats.rank_points <= 4000 THEN
+        -- Diminishing returns on HP bonus for high rank gaps
+        IF v_p1_stats.rank_points > v_p2_stats.rank_points + 1000 THEN
+            v_p1_hp_bonus := 2; 
+        END IF;
+        
+        IF v_p1_stats.rank_points > 3000 THEN
             v_p1_hp_bonus := v_p1_hp_bonus / 2;
         END IF;
     ELSE
-        IF v_room.player2_hp < 10 THEN v_p1_hp_bonus := 5; END IF;
-        IF v_is_instant_kill THEN v_p1_change := v_p1_change / 2; END IF;
-        IF v_p1_stats.total_battles < 10 THEN v_p1_change := v_p1_change / 2; END IF;
+        -- LOSS PROTECTIONS 
+        IF v_p1_stats.rank_points < 2000 THEN
+            IF v_room.player2_hp < 10 THEN 
+                v_p1_protection := v_p1_protection + 5; 
+            END IF;
+            
+            IF v_is_instant_kill THEN 
+                v_p1_protection := v_p1_protection + ABS(v_p1_change / 2); 
+            END IF; 
+            
+            IF v_p1_stats.total_battles < 10 THEN 
+                v_p1_protection := v_p1_protection + ABS(v_p1_change / 2);
+            END IF;
+        END IF;
     END IF;
+    
+    -- Apply Protection to Change
+    IF NOT v_p1_is_winner THEN
+         v_p1_protection := LEAST(v_p1_protection, ABS(v_p1_change));
+         v_p1_change := v_p1_change + v_p1_protection;
+    END IF;
+
     v_p1_change := v_p1_change + v_p1_hp_bonus;
 
     -- 3. Streak / Special Bonuses
     IF v_p1_is_winner THEN
         IF v_p1_stats.win_streak >= 2 THEN v_p1_streak_bonus := 10; END IF;
+        
+        IF v_p1_stats.rank_points > v_p2_stats.rank_points + 1000 THEN
+             v_p1_streak_bonus := 0; 
+        END IF;
+
         v_p1_change := v_p1_change + v_p1_streak_bonus;
+        
         IF v_p1_stats.last_daily_win IS NULL OR v_p1_stats.last_daily_win < CURRENT_DATE THEN
              v_p1_change := v_p1_change * 2;
         END IF;
@@ -155,8 +201,9 @@ BEGIN
     v_p2_is_winner := (v_room.player2_id = v_winner_id);
     v_p2_final_hp := v_room.player2_hp;
     
+    -- Base
     IF v_p2_is_winner THEN
-        IF v_p1_stats.rank_points > v_p2_stats.rank_points + 200 THEN v_p2_base := 35;
+         IF v_p1_stats.rank_points > v_p2_stats.rank_points + 200 THEN v_p2_base := 35;
         ELSIF v_p1_stats.rank_points < v_p2_stats.rank_points - 200 THEN v_p2_base := 25;
         ELSE v_p2_base := 30; END IF;
 
@@ -166,40 +213,67 @@ BEGIN
         ELSIF v_p2_stats.rank_points <= 4000 THEN v_p2_base := 25;
         ELSE v_p2_base := 20; END IF;
 
-        IF v_p1_stats.rank_points > v_p2_stats.rank_points + 100 THEN v_p2_base := v_p2_base + 5;
-        ELSIF v_p1_stats.rank_points < v_p2_stats.rank_points - 100 THEN v_p2_base := GREATEST(5, v_p2_base - 5);
+        -- Override based on MAJOR diff
+        IF v_p2_stats.rank_points > v_p1_stats.rank_points + 2000 THEN 
+             v_p2_base := 1; 
+        ELSIF v_p2_stats.rank_points > v_p1_stats.rank_points + 1000 THEN
+             v_p2_base := GREATEST(5, v_p2_base - 15);
+        ELSIF v_p2_stats.rank_points > v_p1_stats.rank_points + 500 THEN
+             v_p2_base := GREATEST(10, v_p2_base - 5);
         END IF;
     ELSE
         IF v_p2_stats.rank_points <= 1000 THEN v_p2_base := 0;
         ELSIF v_p2_stats.rank_points <= 2000 THEN v_p2_base := -10;
-        ELSIF v_p2_stats.rank_points <= 3000 THEN v_p2_base := -20;
-        ELSIF v_p2_stats.rank_points <= 4000 THEN v_p2_base := -25;
-        ELSE v_p2_base := -30; END IF;
+        ELSIF v_p2_stats.rank_points <= 3000 THEN v_p2_base := -25;
+        ELSIF v_p2_stats.rank_points <= 4000 THEN v_p2_base := -30;
+        ELSE v_p2_base := -35; END IF;
 
         IF v_p2_base < 0 THEN
-            IF v_p1_stats.rank_points > v_p2_stats.rank_points + 100 THEN v_p2_base := v_p2_base + 5;
-            ELSIF v_p1_stats.rank_points < v_p2_stats.rank_points - 100 THEN v_p2_base := v_p2_base - 5;
+            IF v_p1_stats.rank_points > v_p2_stats.rank_points + 500 THEN v_p2_base := v_p2_base + 5;
+            ELSIF v_p1_stats.rank_points < v_p2_stats.rank_points - 500 THEN v_p2_base := v_p2_base - 5;
             END IF;
         END IF;
     END IF;
     v_p2_change := v_p2_base;
 
+    -- HP Bonus P2
     IF v_p2_is_winner THEN
         IF v_p2_final_hp > 90 THEN v_p2_hp_bonus := 15;
         ELSIF v_p2_final_hp >= 50 THEN v_p2_hp_bonus := 8;
         ELSIF v_p2_final_hp < 20 THEN v_p2_hp_bonus := 2;
         END IF;
-        IF v_p2_stats.rank_points > 3000 AND v_p2_stats.rank_points <= 4000 THEN v_p2_hp_bonus := v_p2_hp_bonus / 2; END IF;
+        
+        IF v_p2_stats.rank_points > v_p1_stats.rank_points + 1000 THEN
+            v_p2_hp_bonus := 2; 
+        END IF;
+
+        IF v_p2_stats.rank_points > 3000 THEN v_p2_hp_bonus := v_p2_hp_bonus / 2; END IF;
     ELSE
-        IF v_room.player1_hp < 10 THEN v_p2_hp_bonus := 5; END IF;
-        IF v_is_instant_kill THEN v_p2_change := v_p2_change / 2; END IF;
-        IF v_p2_stats.total_battles < 10 THEN v_p2_change := v_p2_change / 2; END IF;
+         -- LOSS PROTECTIONS
+        IF v_p2_stats.rank_points < 2000 THEN
+            IF v_room.player1_hp < 10 THEN v_p2_protection := v_p2_protection + 5; END IF;
+            IF v_is_instant_kill THEN v_p2_protection := v_p2_protection + ABS(v_p2_change / 2); END IF;
+            IF v_p2_stats.total_battles < 10 THEN v_p2_protection := v_p2_protection + ABS(v_p2_change / 2); END IF;
+        END IF;
     END IF;
+    
+    IF NOT v_p2_is_winner THEN
+         v_p2_protection := LEAST(v_p2_protection, ABS(v_p2_change));
+         v_p2_change := v_p2_change + v_p2_protection;
+    END IF;
+
     v_p2_change := v_p2_change + v_p2_hp_bonus;
 
+    -- Streak/Daily P2
     IF v_p2_is_winner THEN
         IF v_p2_stats.win_streak >= 2 THEN v_p2_streak_bonus := 10; END IF;
+        
+        IF v_p2_stats.rank_points > v_p1_stats.rank_points + 1000 THEN
+             v_p2_streak_bonus := 0; 
+        END IF;
+
         v_p2_change := v_p2_change + v_p2_streak_bonus;
+        
         IF v_p2_stats.last_daily_win IS NULL OR v_p2_stats.last_daily_win < CURRENT_DATE THEN v_p2_change := v_p2_change * 2; END IF;
     END IF;
 
@@ -207,19 +281,23 @@ BEGIN
     -- FINAL UPDATES
     -- ==========================================
     
+    -- Build Details JSON
     v_details := jsonb_build_object(
         'player1', jsonb_build_object(
             'base', v_p1_base,
             'hp_bonus', v_p1_hp_bonus,
-            'streak_bonus', v_p1_streak_bonus
+            'streak_bonus', v_p1_streak_bonus,
+            'protection', v_p1_protection
         ),
         'player2', jsonb_build_object(
             'base', v_p2_base,
             'hp_bonus', v_p2_hp_bonus,
-            'streak_bonus', v_p2_streak_bonus
+            'streak_bonus', v_p2_streak_bonus,
+            'protection', v_p2_protection
         )
     );
 
+    -- Update Room with Score Changes
     UPDATE pvp_grammar_rooms
     SET 
         player1_score_change = v_p1_change,
@@ -227,6 +305,7 @@ BEGIN
         match_details = v_details
     WHERE id = p_room_id;
 
+    -- Player 1 Update
     UPDATE user_stats
     SET 
         rank_points = GREATEST(0, rank_points + v_p1_change),
@@ -244,6 +323,7 @@ BEGIN
         END
     WHERE user_id = v_room.player1_id;
 
+    -- Player 2 Update
     UPDATE user_stats
     SET 
         rank_points = GREATEST(0, rank_points + v_p2_change),
