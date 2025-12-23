@@ -8,7 +8,7 @@ import WritingWorkspace from './writing/WritingWorkspace';
 import { PenTool, Loader } from 'lucide-react';
 
 interface WritingTrainingProps {
-  onSuccess: (exp: number) => void;
+  onSuccess: (exp: number, gold?: number) => void;
 }
 
 const WritingTraining: React.FC<WritingTrainingProps> = ({ onSuccess }) => {
@@ -52,9 +52,9 @@ const WritingTraining: React.FC<WritingTrainingProps> = ({ onSuccess }) => {
     fetchData();
   };
 
-  const handleComplete = (xp: number) => {
+  const handleComplete = (xp: number, gold?: number) => {
     if (xp > 0) {
-      onSuccess(xp);
+      onSuccess(xp, gold);
       // Optimistically update completed set
       if (selectedMaterial) {
         setCompletedIds(prev => new Set(prev).add(selectedMaterial.id));

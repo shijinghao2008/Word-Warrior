@@ -79,7 +79,8 @@ export const initializeUserStats = async (userId: string, initialStats: UserStat
                 rank_points: initialStats.rankPoints,
                 win_streak: initialStats.winStreak,
                 mastered_words_count: initialStats.masteredWordsCount,
-                login_days: initialStats.loginDays
+                login_days: initialStats.loginDays,
+                gold: 0
             }
         ])
         .select()
@@ -121,7 +122,8 @@ export const getUserStats = async (userId: string = TEST_USER_ID): Promise<UserS
         rankPoints: dbStats.rank_points,
         winStreak: dbStats.win_streak,
         masteredWordsCount: dbStats.mastered_words_count,
-        loginDays: dbStats.login_days
+        loginDays: dbStats.login_days,
+        gold: dbStats.gold
     };
 };
 
@@ -143,6 +145,7 @@ export const updateUserStats = async (userId: string = TEST_USER_ID, stats: Part
     if (stats.winStreak !== undefined) updateData.win_streak = stats.winStreak;
     if (stats.masteredWordsCount !== undefined) updateData.mastered_words_count = stats.masteredWordsCount;
     if (stats.loginDays !== undefined) updateData.login_days = stats.loginDays;
+    if (stats.gold !== undefined) updateData.gold = stats.gold;
 
     const { data, error } = await supabase
         .from('user_stats')

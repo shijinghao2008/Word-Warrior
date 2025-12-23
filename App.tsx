@@ -53,7 +53,7 @@ interface AuthenticatedAppProps {
 const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
   const { user } = useAuth();
   const { themeMode, getColorClass, primaryColor, avatar } = useTheme(); // Use Theme Context
-  const { state: warriorState } = useWarrior();
+  const { state: warriorState, addGold } = useWarrior();
 
   const [stats, setStats] = useState<UserStats>(() => {
     const saved = localStorage.getItem(`ww_stats_${userId}`);
@@ -358,8 +358,20 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
       case 'scholar': return renderScholarPath();
       case 'leaderboard': return <div className="pb-32"><Leaderboard /></div>;
       case 'profile': return renderProfile();
-      case 'reading': return <div className="h-full"><ReadingTraining onSuccess={(exp) => handleGainExp(exp, 'hp')} /></div>;
-      case 'writing': return <div className="h-full"><WritingTraining onSuccess={(exp) => handleGainExp(exp, 'atk')} /></div>;
+      case 'reading': return <div className="h-full"><ReadingTraining onSuccess={(exp, gold) => {
+        handleGainExp(exp, 'hp');
+        if (gold) {
+          addGold(gold);
+          setStats(prev => ({ ...prev, gold: (prev.gold || 0) + gold }));
+        }
+      }} /></div>;
+      case 'writing': return <div className="h-full"><WritingTraining onSuccess={(exp, gold) => {
+        handleGainExp(exp, 'atk');
+        if (gold) {
+          addGold(gold);
+          setStats(prev => ({ ...prev, gold: (prev.gold || 0) + gold }));
+        }
+      }} /></div>;
       case 'listening': return <div className="h-full"><ListeningTraining onSuccess={(exp) => handleGainExp(exp, 'def')} /></div>;
       case 'oral': return <div className="h-full"><OralTraining playerStats={stats} onSuccess={(exp) => handleGainExp(exp)} /></div>;
       case 'pvp_blitz':

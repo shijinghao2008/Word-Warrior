@@ -9,7 +9,7 @@ import XPNotification from '../ui/XPNotification';
 interface WritingWorkspaceProps {
     material: WritingMaterial;
     onBack: () => void;
-    onComplete: (xpAwarded: number) => void;
+    onComplete: (xpAwarded: number, goldAwarded?: number) => void;
 }
 
 const WritingWorkspace: React.FC<WritingWorkspaceProps> = ({ material, onBack, onComplete }) => {
@@ -39,7 +39,7 @@ const WritingWorkspace: React.FC<WritingWorkspaceProps> = ({ material, onBack, o
                 if (response.xpAwarded > 0) {
                     setXpEarned(response.xpAwarded);
                     setShowXPNotification(true);
-                    onComplete(response.xpAwarded);
+                    onComplete(response.xpAwarded, response.goldAwarded);
                 }
                 // Force scroll to top or show success feedback
             } else {

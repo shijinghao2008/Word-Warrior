@@ -4,11 +4,12 @@ import { ReadingMaterial } from '../types';
 import { readingService } from '../services/readingService';
 import ReadingList from './reading/ReadingList';
 import ReadingReader from './reading/ReadingReader';
+import XPNotification from './ui/XPNotification';
 
 import { BookOpen, Loader } from 'lucide-react';
 
 interface ReadingTrainingProps {
-  onSuccess: (exp: number) => void;
+  onSuccess: (exp: number, gold?: number) => void;
 }
 
 const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess }) => {
@@ -19,6 +20,8 @@ const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess }) => {
   const [mode, setMode] = useState<'list' | 'read'>('list');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showXPNotification, setShowXPNotification] = useState(false);
+  const [xpEarned, setXpEarned] = useState(0);
 
   useEffect(() => {
     fetchMaterials();
@@ -61,13 +64,16 @@ const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess }) => {
 
       if (result.success) {
         if (result.xpAwarded > 0) {
-          onSuccess(result.xpAwarded);
+          setXpEarned(result.xpAwarded);
+          setShowXPNotification(true);
+          onSuccess(result.xpAwarded, result.goldAwarded);
         }
         // Update local state to reflect completion immediately
         setCompletedIds(prev => new Set(prev).add(selectedMaterial.id));
 
-        // Show alert for feedback (temporary UI)
-        alert(result.message);
+        // Note: The notification shows XP. The user might get Gold too but we don't show it in the XP popup as per requirement "same form as writing"
+        // and Writing only shows XP in the popup.
+
         // Return to list after successful completion
         handleBackToList();
       } else {
@@ -93,12 +99,12 @@ const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess }) => {
       <div className="max-w-3xl mx-auto px-4 py-10">
         <div className="ww-surface ww-surface--soft rounded-[22px] p-6 text-center">
           <p className="ww-ink font-black">{error}</p>
-        <button
-          onClick={fetchMaterials}
-          className="mt-5 px-6 py-3 ww-btn ww-btn--accent rounded-2xl text-[10px]"
-        >
-          重试
-        </button>
+          <button
+            onClick={fetchMaterials}
+            className="mt-5 px-6 py-3 ww-btn ww-btn--accent rounded-2xl text-[10px]"
+          >
+            重试
+          </button>
         </div>
       </div>
     );
@@ -141,6 +147,11 @@ const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess }) => {
           onComplete={handleQuizComplete}
         />
       )}
+      <XPNotification
+        amount={xpEarned}
+        isVisible={showXPNotification}
+        onClose={() => setShowXPNotification(false)}
+      />
     </div>
   );
 };

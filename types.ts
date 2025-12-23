@@ -21,6 +21,7 @@ export interface UserStats {
   // Achievement specific stats
   masteredWordsCount: number;
   loginDays: number;
+  gold: number;
 }
 
 export interface UserProfile {
@@ -73,6 +74,7 @@ export interface DatabaseUserStats {
   win_streak: number;
   mastered_words_count: number;
   login_days: number;
+  gold: number;
   updated_at: string;
 }
 
