@@ -61,15 +61,16 @@ export { getOpponentProfile };
  */
 export const checkGrammarMatchStatus = async (userId: string): Promise<{ roomId: string; role: 'player1' | 'player2' } | null> => {
     try {
-        // Look for active rooms created in the last 30 seconds involving this user
-        const thirtySecondsAgo = new Date(Date.now() - 30000).toISOString();
+        // Look for active rooms created in the last 1 hour involving this user
+        // We increased this from 30s to 1h to handle client-server time drift issues.
+        const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
 
         const { data, error } = await supabase
             .from('pvp_grammar_rooms')
             .select('id, player1_id, player2_id')
             .or(`player1_id.eq.${userId},player2_id.eq.${userId}`)
             .eq('status', 'active')
-            .gt('created_at', thirtySecondsAgo)
+            .gt('created_at', oneHourAgo)
             .single();
 
         if (error || !data) return null;
