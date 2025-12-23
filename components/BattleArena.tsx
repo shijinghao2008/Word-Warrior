@@ -53,6 +53,11 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
   const [matchDetails, setMatchDetails] = useState<any>(null); // Store score breakdown
   const [isBattleBtnPressed, setIsBattleBtnPressed] = useState(false);
 
+  // Choice feedback (for immediate learning)
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [choiceFeedback, setChoiceFeedback] = useState<null | { kind: 'ok' | 'bad'; text: string }>(null);
+  const choiceFeedbackTimerRef = useRef<number | null>(null);
+
   // State Refs for Subscription Callbacks (Avoid Stale Closures)
   const stateRef = useRef({
     playerHp: playerStats.hp,
@@ -72,6 +77,26 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
     stateRef.current.questions = questions;
     stateRef.current.opponentId = opponentId;
   }, [playerHp, enemyHp, currentQIndex, hasAnsweredCurrent, questions, opponentId]);
+
+  // Reset choice UI feedback when the question changes / mode changes
+  useEffect(() => {
+    setSelectedOption(null);
+    setChoiceFeedback(null);
+    if (choiceFeedbackTimerRef.current) {
+      window.clearTimeout(choiceFeedbackTimerRef.current);
+      choiceFeedbackTimerRef.current = null;
+    }
+  }, [currentQIndex, roomId, pvpState]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (choiceFeedbackTimerRef.current) {
+        window.clearTimeout(choiceFeedbackTimerRef.current);
+        choiceFeedbackTimerRef.current = null;
+      }
+    };
+  }, []);
 
   // Other Modes State
   const [currentGrammarQ, setCurrentGrammarQ] = useState(MOCK_GRAMMAR_QUESTIONS[0]);
@@ -797,8 +822,25 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
 
   const handleChoice = (option: string) => {
     if (hasAnsweredCurrent) return;
+    if (!isGameConnected) return;
     const currentQ = questions[currentQIndex];
+    if (!currentQ) return;
     const isCorrect = option === currentQ.correctAnswer;
+
+    // Immediate feedback on the choice itself (not just HP change)
+    setSelectedOption(option);
+    setChoiceFeedback(isCorrect ? { kind: 'ok', text: '正确' } : { kind: 'bad', text: '错误' });
+    if (!isCorrect && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        // Short haptic for mobile (best-effort)
+        (navigator as any).vibrate?.(120);
+      } catch {
+        // ignore
+      }
+    }
+    if (choiceFeedbackTimerRef.current) window.clearTimeout(choiceFeedbackTimerRef.current);
+    choiceFeedbackTimerRef.current = window.setTimeout(() => setChoiceFeedback(null), 650);
+
     handlePvPAnswer(isCorrect, timeLeft);
   };
 
@@ -1068,6 +1110,11 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
         className="mx-2 md:mx-4 dark:bg-slate-900/30 bg-white border dark:border-slate-800 border-slate-200 rounded-[2rem] md:rounded-[3rem] p-4 md:p-12 flex flex-col items-center justify-center relative shadow-2xl backdrop-blur-sm overflow-hidden md:static sticky z-[30]"
         style={{ bottom: 'calc(env(safe-area-inset-bottom) + 96px)' }}
       >
+        {/* a11y: announce correctness */}
+        <div className="sr-only" aria-live="assertive">
+          {choiceFeedback?.text || ''}
+        </div>
+
         <AnimatePresence>
           {damageNumbers.map(d => (
             <motion.div
@@ -1081,6 +1128,25 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
               {d.type && <span className="text-[10px] md:text-xs uppercase tracking-widest">{d.type}</span>}
             </motion.div>
           ))}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {choiceFeedback ? (
+            <motion.div
+              key={`choice-feedback-${currentQIndex}-${choiceFeedback.kind}`}
+              initial={{ opacity: 0, y: 8, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.98 }}
+              transition={{ duration: 0.16 }}
+              className={`absolute top-3 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded-full text-[12px] font-black tracking-widest shadow-lg border ${
+                choiceFeedback.kind === 'bad'
+                  ? 'bg-red-500 text-white border-red-200'
+                  : 'bg-emerald-500 text-white border-emerald-200'
+              }`}
+            >
+              {choiceFeedback.text}
+            </motion.div>
+          ) : null}
         </AnimatePresence>
 
         {mode === 'pvp_blitz' && (
@@ -1101,7 +1167,16 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
                       key={`${currentQIndex}-${idx}`}
                       onClick={() => handleChoice(opt)}
                       disabled={hasAnsweredCurrent || !isGameConnected}
-                      className="ww-choice p-3 md:p-8 text-[11px] md:text-base active:scale-[0.99] disabled:cursor-not-allowed"
+                      className={[
+                        'ww-choice p-3 md:p-8 text-[11px] md:text-base active:scale-[0.99] disabled:cursor-not-allowed transition-colors',
+                        selectedOption
+                          ? (opt === selectedOption
+                            ? (opt === questions[currentQIndex]?.correctAnswer
+                              ? 'ww-choice--ok bg-emerald-50'
+                              : 'ww-choice--bad bg-red-50 animate-shake')
+                            : 'opacity-60')
+                          : ''
+                      ].join(' ')}
                     >
                       {opt}
                     </button>
@@ -1138,7 +1213,16 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
                   key={opt}
                   onClick={() => handleChoice(opt)}
                   disabled={hasAnsweredCurrent || !isGameConnected}
-                  className="ww-choice p-3 md:p-6 text-[11px] md:text-lg active:scale-[0.99] disabled:opacity-50"
+                  className={[
+                    'ww-choice p-3 md:p-6 text-[11px] md:text-lg active:scale-[0.99] disabled:opacity-50 transition-colors',
+                    selectedOption
+                      ? (opt === selectedOption
+                        ? (opt === questions[currentQIndex]?.correctAnswer
+                          ? 'ww-choice--ok bg-emerald-50'
+                          : 'ww-choice--bad bg-red-50 animate-shake')
+                        : 'opacity-60')
+                      : ''
+                  ].join(' ')}
                 >
                   {opt}
                 </button>
@@ -1171,7 +1255,16 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
                   key={opt}
                   onClick={() => handleChoice(opt)}
                   disabled={hasAnsweredCurrent || !isGameConnected}
-                  className="ww-choice p-3 md:p-6 text-[11px] md:text-lg active:scale-[0.99] disabled:opacity-50"
+                  className={[
+                    'ww-choice p-3 md:p-6 text-[11px] md:text-lg active:scale-[0.99] disabled:opacity-50 transition-colors',
+                    selectedOption
+                      ? (opt === selectedOption
+                        ? (opt === questions[currentQIndex]?.correctAnswer
+                          ? 'ww-choice--ok bg-emerald-50'
+                          : 'ww-choice--bad bg-red-50 animate-shake')
+                        : 'opacity-60')
+                      : ''
+                  ].join(' ')}
                 >
                   {opt}
                 </button>
