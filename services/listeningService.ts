@@ -41,44 +41,57 @@ export const listeningService = {
     },
 
     // Record listening completion and award XP
-    async completeListening(userId: string, materialId: string, score: number): Promise<{ success: boolean; xpAwarded: number; message: string }> {
-        // 1. Check if already completed
+    async completeListening(userId: string, materialId: string, score: number): Promise<{ success: boolean; xpAwarded: number; goldAwarded?: number; message: string }> {
+        // 1. Get material details to determine max score
+        const { data: material, error: materialError } = await supabase
+            .from('listening_materials')
+            .select('questions')
+            .eq('id', materialId)
+            .single();
+
+        if (materialError || !material) {
+            console.error('Error fetching listening material details:', materialError);
+            return { success: false, xpAwarded: 0, message: 'Failed to verify listening material.' };
+        }
+
+        const totalQuestions = material.questions?.length || 0;
+        const isPerfectScore = score === totalQuestions && totalQuestions > 0;
+
+        // 2. Check existing record to avoid duplicate rewards for ALREADY perfect scores
         const { data: existing } = await supabase
             .from('user_listening_progress')
-            .select('id')
+            .select('score')
             .eq('user_id', userId)
             .eq('material_id', materialId)
             .single();
 
-        if (existing) {
-            return { success: false, xpAwarded: 0, message: 'You have already completed this listening exercise.' };
-        }
+        // If they already got a perfect score, don't give it again.
+        // But if they didn't, they can improve their score.
+        const previouslyPerfect = existing && existing.score >= totalQuestions;
 
-        // 2. Insert record
-        const { error: insertError } = await supabase
+        // 3. Upsert record
+        const { error: upsertError } = await supabase
             .from('user_listening_progress')
-            .insert({
+            .upsert({
                 user_id: userId,
                 material_id: materialId,
                 score: score,
                 completed_at: new Date().toISOString()
-            });
+            }, { onConflict: 'user_id,material_id' });
 
-        if (insertError) {
-            // Check for duplicate key error just in case race condition
-            if (insertError.code === '23505') {
-                return { success: false, xpAwarded: 0, message: 'You have already completed this listening exercise.' };
-            }
-            console.error('Error recording listening progress:', insertError);
-            throw insertError;
+        if (upsertError) {
+            console.error('Error recording listening progress:', upsertError);
+            return { success: false, xpAwarded: 0, message: `Failed to save progress: ${upsertError.message}` };
         }
 
-        // 3. Award XP if score is perfect (assuming 4 questions like reading) or high enough
-        // Awarding 20 XP as per "ListeningTraining" original logic (or similar)
-        // Adjusting to Reading logic: 10 XP for full score? User didn't specify XP amount, but original Reading gives 10.
-        // Let's go with 20 XP for Listening as it is harder.
-        if (score >= 4) {
-            const xpAmount = 20;
+        // 4. Award Rewards if perfect score AND not previously perfect
+        let goldAwarded = 0;
+        let xpAmount = 0;
+
+        if (isPerfectScore && !previouslyPerfect) {
+            xpAmount = 180;
+            const goldAmount = 60;
+
             const { error: xpError } = await supabase.rpc('increment_user_exp', {
                 x_user_id: userId,
                 x_amount: xpAmount
@@ -86,10 +99,21 @@ export const listeningService = {
 
             if (xpError) {
                 console.error('Error awarding XP:', xpError);
-                return { success: true, xpAwarded: 0, message: 'Exercise completed, but failed to update XP.' };
             }
 
-            return { success: true, xpAwarded: xpAmount, message: `Excellent! +${xpAmount} EXP` };
+            // Award Gold
+            const { error: goldError } = await supabase.rpc('increment_user_gold', {
+                x_user_id: userId,
+                x_amount: goldAmount
+            });
+
+            if (goldError) {
+                console.error('Error awarding Gold:', goldError);
+            } else {
+                goldAwarded = goldAmount;
+            }
+
+            return { success: true, xpAwarded: xpAmount, goldAwarded, message: `Excellent! +${xpAmount} EXP, +${goldAmount} Coins` };
         }
 
         return { success: true, xpAwarded: 0, message: 'Exercise completed!' };

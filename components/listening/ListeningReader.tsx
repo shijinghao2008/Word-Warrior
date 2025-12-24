@@ -92,7 +92,7 @@ const ListeningReader: React.FC<ListeningReaderProps> = ({ material, onBack, onC
         // Calculate score
         let score = 0;
         material.questions.forEach((q, idx) => {
-            if (userAnswers[idx] === q.answer) {
+            if (userAnswers[idx]?.trim() === q.answer?.trim()) {
                 score++;
             }
         });
@@ -230,11 +230,15 @@ const ListeningReader: React.FC<ListeningReaderProps> = ({ material, onBack, onC
                                     let btnClass = "ww-surface ww-surface--soft border-2";
                                     let btnStyle: React.CSSProperties = { borderColor: 'rgba(43,23,63,0.22)' };
 
+                                    const trimmedOpt = opt.trim();
+                                    const trimmedAnswer = q.answer?.trim();
+                                    const trimmedUserAnswer = userAnswer?.trim();
+
                                     if (isSubmitted) {
-                                        if (opt === q.answer) {
+                                        if (trimmedOpt === trimmedAnswer) {
                                             btnClass = "ww-surface ww-surface--soft border-2";
                                             btnStyle = { borderColor: 'rgba(16,185,129,0.75)', background: 'rgba(16,185,129,0.14)' };
-                                        } else if (opt === userAnswer && opt !== q.answer) {
+                                        } else if (trimmedOpt === trimmedUserAnswer && trimmedOpt !== trimmedAnswer) {
                                             btnClass = "ww-surface ww-surface--soft border-2";
                                             btnStyle = { borderColor: 'rgba(239,68,68,0.75)', background: 'rgba(239,68,68,0.12)' };
                                         } else {
@@ -257,8 +261,8 @@ const ListeningReader: React.FC<ListeningReaderProps> = ({ material, onBack, onC
                                             style={btnStyle}
                                         >
                                             <span className="ww-ink font-black">{opt}</span>
-                                            {isSubmitted && opt === q.answer && <CheckCircle size={18} />}
-                                            {isSubmitted && opt === userAnswer && opt !== q.answer && <AlertCircle size={18} />}
+                                            {isSubmitted && trimmedOpt === trimmedAnswer && <CheckCircle size={18} />}
+                                            {isSubmitted && trimmedOpt === trimmedUserAnswer && trimmedOpt !== trimmedAnswer && <AlertCircle size={18} />}
                                         </button>
                                     );
                                 })}
@@ -272,33 +276,33 @@ const ListeningReader: React.FC<ListeningReaderProps> = ({ material, onBack, onC
             <div className="sticky bottom-0 -mx-4 px-6 py-4 flex items-center justify-between">
                 <div className="ww-surface ww-surface--soft rounded-[22px] w-full px-4 py-3 flex items-center justify-between">
 
-                {/* Transcript Toggle */}
-                <button
-                    onClick={() => setShowTranscript(!showTranscript)}
-                    disabled={!isSubmitted}
-                    className={`flex items-center gap-2 font-black transition-colors ${isSubmitted ? 'ww-link' : 'ww-muted cursor-not-allowed'}`}
-                >
-                    {showTranscript ? <EyeOff size={18} /> : <Eye size={18} />}
-                    {showTranscript ? "隐藏原文" : "查看原文"}
-                </button>
-
-                {!isSubmitted ? (
+                    {/* Transcript Toggle */}
                     <button
-                        onClick={handleSubmit}
-                        disabled={Object.keys(userAnswers).length < material.questions.length}
-                        className={`px-6 py-3 rounded-2xl text-[10px] transition-all ${Object.keys(userAnswers).length < material.questions.length
-                            ? 'ww-btn ww-btn--ink opacity-60 cursor-not-allowed'
-                            : 'ww-btn ww-btn--accent'
-                            }`}
+                        onClick={() => setShowTranscript(!showTranscript)}
+                        disabled={!isSubmitted}
+                        className={`flex items-center gap-2 font-black transition-colors ${isSubmitted ? 'ww-link' : 'ww-muted cursor-not-allowed'}`}
                     >
-                        提交答案
+                        {showTranscript ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {showTranscript ? "隐藏原文" : "查看原文"}
                     </button>
-                ) : (
-                    <div className="text-right">
-                        <span className="text-[10px] ww-muted font-black block">已提交</span>
-                        <span className="font-black" style={{ color: 'rgba(16,185,129,0.95)' }}>完成</span>
-                    </div>
-                )}
+
+                    {!isSubmitted ? (
+                        <button
+                            onClick={handleSubmit}
+                            disabled={Object.keys(userAnswers).length < material.questions.length}
+                            className={`px-6 py-3 rounded-2xl text-[10px] transition-all ${Object.keys(userAnswers).length < material.questions.length
+                                ? 'ww-btn ww-btn--ink opacity-60 cursor-not-allowed'
+                                : 'ww-btn ww-btn--accent'
+                                }`}
+                        >
+                            提交答案
+                        </button>
+                    ) : (
+                        <div className="text-right">
+                            <span className="text-[10px] ww-muted font-black block">已提交</span>
+                            <span className="font-black" style={{ color: 'rgba(16,185,129,0.95)' }}>完成</span>
+                        </div>
+                    )}
                 </div>
             </div>
 

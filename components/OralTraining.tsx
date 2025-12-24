@@ -8,7 +8,7 @@ import { Mic2 } from 'lucide-react';
 
 interface OralTrainingProps {
   playerStats: any;
-  onSuccess: (exp: number) => void;
+  onSuccess: (exp: number, gold?: number) => void;
 }
 
 const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) => {

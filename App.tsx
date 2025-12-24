@@ -372,8 +372,20 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
           setStats(prev => ({ ...prev, gold: (prev.gold || 0) + gold }));
         }
       }} /></div>;
-      case 'listening': return <div className="h-full"><ListeningTraining onSuccess={(exp) => handleGainExp(exp, 'def')} /></div>;
-      case 'oral': return <div className="h-full"><OralTraining playerStats={stats} onSuccess={(exp) => handleGainExp(exp)} /></div>;
+      case 'listening': return <div className="h-full"><ListeningTraining onSuccess={(exp, gold) => {
+        handleGainExp(exp, 'def');
+        if (gold) {
+          addGold(gold);
+          setStats(prev => ({ ...prev, gold: (prev.gold || 0) + gold }));
+        }
+      }} /></div>;
+      case 'oral': return <div className="h-full"><OralTraining playerStats={stats} onSuccess={(exp, gold) => {
+        handleGainExp(exp);
+        if (gold) {
+          addGold(gold);
+          setStats(prev => ({ ...prev, gold: (prev.gold || 0) + gold }));
+        }
+      }} /></div>;
       case 'pvp_blitz':
       case 'pvp_tactics':
         return <div className="h-full"><BattleArena mode={activeTab} playerStats={stats} onVictory={() => setActiveTab('vocab')} onDefeat={() => setActiveTab('vocab')} /></div>;

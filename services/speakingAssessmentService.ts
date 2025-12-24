@@ -139,6 +139,8 @@ export async function assessSpeakingWithAI(
 4. content_score - 内容丰富度（是否有足够的细节和例子）
 5. on_topic_score - 是否切题（是否回答了问题）
 
+同时请统计用户说出的完整句子数量 (sentence_count)。我们将根据句子数量发放奖励。
+
 同时给出 total_score（总分，0-100）和 feedback_text（详细的文字反馈，150字左右，中文，指出优点和需要改进的地方）。
 
 请严格按照以下JSON格式返回，不要包含任何其他文字：
@@ -149,6 +151,7 @@ export async function assessSpeakingWithAI(
   "content_score": 数字,
   "on_topic_score": 数字,
   "total_score": 数字,
+  "sentence_count": 数字,
   "feedback_text": "文字反馈"
 }`;
 
@@ -180,7 +183,7 @@ export async function assessSpeakingWithAI(
         const contentText = typeof responseText === 'string'
             ? responseText
             : Array.isArray(responseText)
-                ? responseText.find((item: any) => item.type === 'text')?.text || JSON.stringify(responseText)
+                ? (responseText.find((item: any) => item.type === 'text') as any)?.text || JSON.stringify(responseText)
                 : String(responseText);
 
         // Parse the JSON response
@@ -201,6 +204,7 @@ export async function assessSpeakingWithAI(
             content_score: validateScore(assessment.content_score),
             on_topic_score: validateScore(assessment.on_topic_score),
             total_score: validateScore(assessment.total_score),
+            sentence_count: assessment.sentence_count || 0,
             feedback_text: assessment.feedback_text || '评估完成。',
         };
     } catch (error) {
@@ -216,10 +220,20 @@ export async function saveAssessment(
     userId: string,
     questionId: string,
     score: AssessmentScore
-): Promise<{ assessmentId: string; expAwarded: number }> {
+): Promise<{ assessmentId: string; expAwarded: number; goldAwarded: number }> {
     try {
-        // Calculate experience award (10 exp for scores >= 75)
-        const expAwarded = score.total_score >= 75 ? 10 : 0;
+        // Calculate awards based on sentence count
+        // 20 XP and 10 Gold per sentence
+        const sentenceCount = score.sentence_count || 0;
+        const expAwarded = sentenceCount * 20;
+        const goldAwarded = sentenceCount * 10;
+
+        // Ensure reasonable limits (e.g., max 500 XP per session to prevent abuse?)
+        // Applying a flexible cap for now, maybe max 20 sentences reward?
+        // Let's keep it uncapped for now unless user asks, but 0 sentences = 0 reward.
+        // Also check if score is decent? Maybe if total_score < 30, no reward?
+        // User didn't specify score threshold, just "Per Sentence".
+        // Let's assume valid sentences.
 
         // Insert assessment record
         const { data: assessmentData, error: assessmentError } = await supabase
@@ -255,9 +269,21 @@ export async function saveAssessment(
             }
         }
 
+        // Update user gold
+        if (goldAwarded > 0) {
+            const { error: goldError } = await supabase.rpc('increment_user_gold', {
+                x_user_id: userId,
+                x_amount: goldAwarded
+            });
+            if (goldError) {
+                console.error('Error updating user gold:', goldError);
+            }
+        }
+
         return {
             assessmentId: assessmentData.id,
             expAwarded,
+            goldAwarded
         };
     } catch (error) {
         console.error('Error saving assessment:', error);

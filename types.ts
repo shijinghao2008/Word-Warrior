@@ -195,6 +195,7 @@ export interface AssessmentScore {
   content_score: number;
   on_topic_score: number;
   feedback_text: string;
+  sentence_count?: number;
 }
 
 export interface SpeakingAssessment {

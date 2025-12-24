@@ -22,10 +22,17 @@ const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess }) => {
   const [error, setError] = useState<string | null>(null);
   const [showXPNotification, setShowXPNotification] = useState(false);
   const [xpEarned, setXpEarned] = useState(0);
+  const [goldEarned, setGoldEarned] = useState(0);
 
   useEffect(() => {
     fetchMaterials();
   }, []);
+
+  // ... (omitting identical lines for brevity in instruction, actual implementation assumes structure)
+  // Need precise targeting. Let's do state first then handler.
+
+  // Better to do two separate replaces if chunks are far apart.
+  // Adding state near line 24.
 
   const fetchMaterials = async () => {
     try {
@@ -61,7 +68,7 @@ const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess }) => {
     const currentIndex = materials.findIndex(m => m.id === selectedMaterial.id);
     const nextIndex = (currentIndex + 1) % materials.length;
     setSelectedMaterial(materials[nextIndex]);
-    
+
     // Improved scrolling for containers
     setTimeout(() => {
       const scrollContainer = document.querySelector('main');
@@ -81,6 +88,7 @@ const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess }) => {
       if (result.success) {
         if (result.xpAwarded > 0) {
           setXpEarned(result.xpAwarded);
+          setGoldEarned(result.goldAwarded || 0);
           setShowXPNotification(true);
           onSuccess(result.xpAwarded, result.goldAwarded);
         }
@@ -166,6 +174,7 @@ const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess }) => {
       )}
       <XPNotification
         amount={xpEarned}
+        gold={goldEarned}
         isVisible={showXPNotification}
         onClose={() => setShowXPNotification(false)}
       />

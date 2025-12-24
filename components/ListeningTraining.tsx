@@ -6,9 +6,10 @@ import { listeningService } from '../services/listeningService';
 import ListeningList from './listening/ListeningList';
 import ListeningReader from './listening/ListeningReader';
 import { Headphones, Loader } from 'lucide-react';
+import XPNotification from './ui/XPNotification';
 
 interface ListeningTrainingProps {
-  onSuccess: (exp: number) => void;
+  onSuccess: (exp: number, gold?: number) => void;
 }
 
 const ListeningTraining: React.FC<ListeningTrainingProps> = ({ onSuccess }) => {
@@ -18,7 +19,11 @@ const ListeningTraining: React.FC<ListeningTrainingProps> = ({ onSuccess }) => {
   const [selectedMaterial, setSelectedMaterial] = useState<ListeningMaterial | null>(null);
   const [mode, setMode] = useState<'list' | 'read'>('list');
   const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState<string | null>(null);
+  const [showXPNotification, setShowXPNotification] = useState(false);
+  const [xpEarned, setXpEarned] = useState(0);
+  const [goldEarned, setGoldEarned] = useState(0);
 
   useEffect(() => {
     fetchMaterials();
@@ -60,7 +65,10 @@ const ListeningTraining: React.FC<ListeningTrainingProps> = ({ onSuccess }) => {
 
       if (result.success) {
         if (result.xpAwarded > 0) {
-          onSuccess(result.xpAwarded);
+          setXpEarned(result.xpAwarded);
+          setGoldEarned(result.goldAwarded || 0);
+          setShowXPNotification(true);
+          onSuccess(result.xpAwarded, result.goldAwarded);
         }
         // Update local state to reflect completion immediately
         setCompletedIds(prev => new Set(prev).add(selectedMaterial.id));
@@ -98,12 +106,12 @@ const ListeningTraining: React.FC<ListeningTrainingProps> = ({ onSuccess }) => {
       <div className="max-w-3xl mx-auto px-4 py-10">
         <div className="ww-surface ww-surface--soft rounded-[22px] p-6 text-center">
           <p className="ww-ink font-black">{error}</p>
-        <button
-          onClick={fetchMaterials}
-          className="mt-5 px-6 py-3 ww-btn ww-btn--accent rounded-2xl text-[10px]"
-        >
-          重试
-        </button>
+          <button
+            onClick={fetchMaterials}
+            className="mt-5 px-6 py-3 ww-btn ww-btn--accent rounded-2xl text-[10px]"
+          >
+            重试
+          </button>
         </div>
       </div>
     );
@@ -146,6 +154,13 @@ const ListeningTraining: React.FC<ListeningTrainingProps> = ({ onSuccess }) => {
           onComplete={handleComplete}
         />
       )}
+
+      <XPNotification
+        amount={xpEarned}
+        gold={goldEarned}
+        isVisible={showXPNotification}
+        onClose={() => setShowXPNotification(false)}
+      />
     </div>
   );
 };

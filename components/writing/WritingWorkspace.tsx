@@ -19,6 +19,7 @@ const WritingWorkspace: React.FC<WritingWorkspaceProps> = ({ material, onBack, o
     const [result, setResult] = useState<WritingResult | null>(null);
     const [showXPNotification, setShowXPNotification] = useState(false);
     const [xpEarned, setXpEarned] = useState(0);
+    const [goldEarned, setGoldEarned] = useState(0);
 
     const wordCount = content.trim().split(/\s+/).filter(w => w.length > 0).length;
     const minWords = 20;
@@ -38,6 +39,7 @@ const WritingWorkspace: React.FC<WritingWorkspaceProps> = ({ material, onBack, o
                 setResult(response.result);
                 if (response.xpAwarded > 0) {
                     setXpEarned(response.xpAwarded);
+                    setGoldEarned(response.goldAwarded || 0);
                     setShowXPNotification(true);
                     onComplete(response.xpAwarded, response.goldAwarded);
                 }
@@ -130,6 +132,7 @@ const WritingWorkspace: React.FC<WritingWorkspaceProps> = ({ material, onBack, o
 
             <XPNotification
                 amount={xpEarned}
+                gold={goldEarned}
                 isVisible={showXPNotification}
                 onClose={() => setShowXPNotification(false)}
             />

@@ -4,11 +4,12 @@ import { Trophy, Sparkles } from 'lucide-react';
 
 interface XPNotificationProps {
     amount: number;
+    gold?: number;
     isVisible: boolean;
     onClose: () => void;
 }
 
-const XPNotification: React.FC<XPNotificationProps> = ({ amount, isVisible, onClose }) => {
+const XPNotification: React.FC<XPNotificationProps> = ({ amount, gold, isVisible, onClose }) => {
     useEffect(() => {
         if (isVisible) {
             const timer = setTimeout(() => {
@@ -62,20 +63,35 @@ const XPNotification: React.FC<XPNotificationProps> = ({ amount, isVisible, onCl
                                 transition={{ delay: 0.3 }}
                                 className="text-fuchsia-300 font-medium"
                             >
-                                Experience Gained
+                                Rewards Gained
                             </motion.p>
                         </div>
 
-                        <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: 0.4, type: "spring" }}
-                            className="bg-slate-800/50 rounded-xl px-6 py-2 border border-slate-700"
-                        >
-                            <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
-                                +{amount} XP
-                            </span>
-                        </motion.div>
+                        <div className="flex flex-col gap-2 w-full">
+                            <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ delay: 0.4, type: "spring" }}
+                                className="bg-slate-800/50 rounded-xl px-6 py-2 border border-slate-700 text-center"
+                            >
+                                <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">
+                                    +{amount} XP
+                                </span>
+                            </motion.div>
+
+                            {gold !== undefined && gold > 0 && (
+                                <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ delay: 0.5, type: "spring" }}
+                                    className="bg-slate-800/50 rounded-xl px-6 py-2 border border-slate-700 text-center"
+                                >
+                                    <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-500">
+                                        +{gold} Coins
+                                    </span>
+                                </motion.div>
+                            )}
+                        </div>
                     </motion.div>
                 </div>
             )}

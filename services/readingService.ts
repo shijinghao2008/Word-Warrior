@@ -88,7 +88,7 @@ export const readingService = {
         let goldAwarded = 0;
 
         if (isPerfectScore && !previouslyPerfect) {
-            xpAwarded = 300;
+            xpAwarded = 350;
             goldAwarded = 100;
 
             // Increment XP

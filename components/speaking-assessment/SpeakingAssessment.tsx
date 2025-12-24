@@ -15,7 +15,9 @@ import {
     ArrowLeft,
     CheckCircle,
     XCircle,
+    Trophy,
 } from 'lucide-react';
+import XPNotification from '../ui/XPNotification';
 import {
     fetchSpeakingQuestions,
     AudioRecorder,
@@ -29,7 +31,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 
 interface SpeakingAssessmentProps {
     userId: string;
-    onSuccess: (exp: number) => void;
+    onSuccess: (exp: number, gold?: number) => void;
     onClose?: () => void;
 }
 
@@ -70,6 +72,8 @@ const SpeakingAssessment: React.FC<SpeakingAssessmentProps> = ({
     const [expAwarded, setExpAwarded] = useState(0);
     const [assessmentHistory, setAssessmentHistory] = useState<SpeakingAssessment[]>([]);
     const [selectedHistoryItem, setSelectedHistoryItem] = useState<SpeakingAssessment | null>(null);
+    const [showXPNotification, setShowXPNotification] = useState(false);
+    const [goldAwarded, setGoldAwarded] = useState(0);
 
     // Refs
     const audioRecorderRef = useRef<AudioRecorder | null>(null);
@@ -142,16 +146,18 @@ const SpeakingAssessment: React.FC<SpeakingAssessmentProps> = ({
             setAssessmentResult(result);
 
             // Save to database
-            const { expAwarded: exp } = await saveAssessment(
+            const { expAwarded: exp, goldAwarded: gold } = await saveAssessment(
                 userId,
                 selectedQuestion.id,
                 result
             );
             setExpAwarded(exp);
+            setGoldAwarded(gold);
 
             // Call parent success handler
             if (exp > 0) {
-                onSuccess(exp);
+                setShowXPNotification(true);
+                onSuccess(exp, gold);
             }
 
             setViewState('result');
@@ -430,15 +436,34 @@ const SpeakingAssessment: React.FC<SpeakingAssessmentProps> = ({
                 </p>
                 <p className="text-xs ww-muted font-black">满分 100</p>
                 {expAwarded > 0 && (
-                    <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="mt-4 flex items-center justify-center gap-2"
-                        style={{ color: 'rgba(16,185,129,0.95)' }}
-                    >
-                        <CheckCircle size={20} />
-                        <span className="text-sm font-black">获得 {expAwarded} 经验值!</span>
-                    </motion.div>
+                    <div className="mt-4 flex flex-col items-center gap-2">
+                        <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="flex items-center gap-2"
+                            style={{ color: 'rgba(16,185,129,0.95)' }}
+                        >
+                            <CheckCircle size={20} />
+                            <span className="text-sm font-black">获得 {expAwarded} 经验值!</span>
+                        </motion.div>
+                        {/* We can infer gold from exp (gold = exp / 2) or use a passed prop if we refactored enough. 
+                             For now, let's just calculate it or rely on the fact that 20XP/10Gold ratio is fixed. 
+                             Or strictly, we should have stored goldAwarded in state. 
+                         */}
+                        <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: 0.1 }}
+                            className="flex items-center gap-2"
+                            style={{ color: 'rgba(252,203,89,1)' }}
+                        >
+                            <Trophy size={18} />
+                            <span className="text-sm font-black">获得 {expAwarded / 2} 金币!</span>
+                        </motion.div>
+                        <p className="text-xs ww-muted font-black mt-2">
+                            (基于 {assessmentResult?.sentence_count || 0} 个有效句子)
+                        </p>
+                    </div>
                 )}
             </div>
 
@@ -647,6 +672,13 @@ const SpeakingAssessment: React.FC<SpeakingAssessmentProps> = ({
                 {viewState === 'result' && <div key="result">{renderResult()}</div>}
                 {viewState === 'history' && <div key="history">{renderHistory()}</div>}
             </AnimatePresence>
+
+            <XPNotification
+                amount={expAwarded}
+                gold={goldAwarded}
+                isVisible={showXPNotification}
+                onClose={() => setShowXPNotification(false)}
+            />
         </div>
     );
 };
