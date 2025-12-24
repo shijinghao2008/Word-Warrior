@@ -6,6 +6,8 @@ export interface MatchDetails {
     hp_bonus: number;
     streak_bonus: number;
     protection?: number;
+    exp_gain?: number;
+    gold_gain?: number;
 }
 
 export interface PvPRoom {

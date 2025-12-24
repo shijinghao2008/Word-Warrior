@@ -1543,7 +1543,9 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
               </div>
 
               {matchDetails && (
-                <div className="bg-slate-800/50 rounded-xl p-6 text-left space-y-2 min-w-[250px] border border-slate-700">
+                <div className="bg-slate-800/50 rounded-xl p-6 text-left space-y-2 min-w-[280px] border border-slate-700">
+                  {/* Rank Score Section */}
+                  <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">排位分数</div>
                   <div className="flex justify-between text-slate-400 font-bold">
                     <span>基础分：</span>
                     <span className={matchDetails.base >= 0 ? 'text-green-400' : 'text-red-400'}>{matchDetails.base > 0 ? '+' : ''}{matchDetails.base}</span>
@@ -1560,7 +1562,6 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
                       <span className="text-green-400">+{matchDetails.streak_bonus}</span>
                     </div>
                   )}
-                  {/* Protection (New) */}
                   {matchDetails.protection && matchDetails.protection > 0 && (
                     <div className="flex justify-between text-slate-400 font-bold">
                       <span>{status === 'YOU WIN!' ? '段位保护：' : '败方保护：'}</span>
@@ -1575,6 +1576,26 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
                       {matchDetails.base + matchDetails.hp_bonus + matchDetails.streak_bonus + (matchDetails.protection || 0)}
                     </span>
                   </div>
+
+                  {/* Rewards Section */}
+                  {(matchDetails.exp_gain || matchDetails.gold_gain) && (
+                    <>
+                      <div className="h-px bg-slate-600 my-3" />
+                      <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">战斗奖励</div>
+                      {matchDetails.exp_gain && matchDetails.exp_gain > 0 && (
+                        <div className="flex justify-between text-slate-400 font-bold">
+                          <span>⭐ 经验值：</span>
+                          <span className="text-purple-400">+{matchDetails.exp_gain} EXP</span>
+                        </div>
+                      )}
+                      {matchDetails.gold_gain && matchDetails.gold_gain > 0 && (
+                        <div className="flex justify-between text-slate-400 font-bold">
+                          <span>💰 金币：</span>
+                          <span className="text-yellow-400">+{matchDetails.gold_gain} Gold</span>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
 
