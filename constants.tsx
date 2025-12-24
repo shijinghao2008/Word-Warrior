@@ -3,6 +3,27 @@ import React from 'react';
 import { Swords, Zap, PenTool, LayoutGrid, Settings, BookOpen, Mic2, Headphones, Trophy, ShieldCheck, Flame, Target, Award, Crown, Sun, Calendar, Scroll, Medal, Star } from 'lucide-react';
 import { Rank } from './types';
 
+export const calculateKP = (stats: { atk: number; def: number; hp: number; level: number }, gearBonus: { atk: number; def: number; hp: number } = { atk: 0, def: 0, hp: 0 }) => {
+  const totalAtk = stats.atk + gearBonus.atk;
+  const totalDef = stats.def + gearBonus.def;
+  const totalHp = stats.hp + gearBonus.hp;
+  
+  return (totalAtk * 10) + (totalDef * 15) + (totalHp * 2) + (stats.level * 100);
+};
+
+export const KP_RANKS = [
+  { name: '见习学徒', label: 'Novice', min: 0, max: 2000, color: 'text-slate-500', bg: 'bg-slate-500/10', border: 'border-slate-400' },
+  { name: '青铜笔杆', label: 'Bronze', min: 2001, max: 5000, color: 'text-amber-700', bg: 'bg-amber-700/10', border: 'border-amber-700' },
+  { name: '白银卷轴', label: 'Silver', min: 5001, max: 10000, color: 'text-slate-400', bg: 'bg-slate-400/10', border: 'border-slate-300' },
+  { name: '黄金羽毛', label: 'Gold', min: 10001, max: 20000, color: 'text-yellow-600', bg: 'bg-yellow-500/10', border: 'border-yellow-500' },
+  { name: '钻石圣贤', min: 20001, max: 50000, color: 'text-purple-600', bg: 'bg-purple-500/10', border: 'border-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]' },
+  { name: '单词武神', label: 'Legend', min: 50001, max: Infinity, color: 'text-red-600', bg: 'bg-red-500/10', border: 'border-red-600 shadow-[0_0_15px_rgba(239,68,68,0.6)]' },
+];
+
+export const getKPRank = (kp: number) => {
+  return KP_RANKS.find(r => kp >= r.min && kp <= r.max) || KP_RANKS[0];
+};
+
 export const INITIAL_STATS = {
   level: 1,
   exp: 0,

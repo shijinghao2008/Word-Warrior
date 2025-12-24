@@ -29,6 +29,9 @@ import { WarriorProvider, useWarrior } from './contexts/WarriorContext';
 import { GameBottomNav } from './components/GameBottomNav';
 import { TopStatusBar } from './components/TopStatusBar';
 
+import { KPNotification } from './components/ui/KPNotification';
+import { calculateKP, getKPRank } from './constants.tsx';
+
 const App: React.FC = () => {
   const { user, loading } = useAuth();
 
@@ -53,14 +56,35 @@ interface AuthenticatedAppProps {
 const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
   const { user } = useAuth();
   const { themeMode, getColorClass, primaryColor, avatar } = useTheme(); // Use Theme Context
-  const { state: warriorState, addGold } = useWarrior();
+  const { state: warriorState, addGold, getItemDetails } = useWarrior();
+
+  const getGearBonuses = () => {
+    const bonuses = { atk: 0, def: 0, hp: 0 };
+    if (warriorState.equipped.weapon) {
+      const item = getItemDetails(warriorState.equipped.weapon);
+      if (item?.statBonus) {
+        bonuses.atk += item.statBonus.atk || 0;
+        bonuses.def += item.statBonus.def || 0;
+        bonuses.hp += item.statBonus.hp || 0;
+      }
+    }
+    if (warriorState.equipped.armor) {
+      const item = getItemDetails(warriorState.equipped.armor);
+      if (item?.statBonus) {
+        bonuses.atk += item.statBonus.atk || 0;
+        bonuses.def += item.statBonus.def || 0;
+        bonuses.hp += item.statBonus.hp || 0;
+      }
+    }
+    return bonuses;
+  };
 
   const [stats, setStats] = useState<UserStats>(() => {
     const saved = localStorage.getItem(`ww_stats_${userId}`);
     return saved ? { ...INITIAL_STATS, ...JSON.parse(saved) } : INITIAL_STATS;
   });
 
-  // Removed local theme state in favor of context
+  const [kpNotification, setKpNotification] = useState<{ gain: number; promotion?: { from: string; to: string } } | null>(null);
 
   const [activeTab, setActiveTab] = useState('vocab');
   const [isArenaMenuOpen, setIsArenaMenuOpen] = useState(false);
@@ -101,6 +125,32 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
 
   // Handlers ... (unchanged)
 
+  // Watch for equipment changes to trigger KP notification
+  const prevKPRef = React.useRef<number | null>(null);
+  useEffect(() => {
+    if (!dbLoaded) return;
+    
+    const gear = getGearBonuses();
+    const currentKP = calculateKP({ 
+      atk: stats.atk, 
+      def: stats.def, 
+      hp: stats.maxHp, 
+      level: stats.level 
+    }, gear);
+    
+    if (prevKPRef.current !== null && currentKP > prevKPRef.current) {
+      const oldRank = getKPRank(prevKPRef.current);
+      const newRank = getKPRank(currentKP);
+      const gain = currentKP - prevKPRef.current;
+      
+      setKpNotification({
+        gain: gain,
+        promotion: newRank.name !== oldRank.name ? { from: oldRank.name, to: newRank.name } : undefined
+      });
+    }
+    prevKPRef.current = currentKP;
+  }, [warriorState.equipped, stats.level, stats.atk, stats.def, stats.maxHp, dbLoaded]);
+
   const handleGainExp = (exp: number, statType?: 'atk' | 'def' | 'crit' | 'hp', word?: string) => {
     setStats(prev => {
       let newStats = { ...prev, exp: prev.exp + exp };
@@ -112,29 +162,23 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
         newStats.level += 1;
 
         // Proportional Stat Increase based on New Level
-        // Higher level = more stats gained per level up
         const levelScaler = newStats.level;
-
         newStats.maxHp += 10 * levelScaler;
         newStats.hp = newStats.maxHp;     // Full heal on level up
         newStats.atk += 1 * levelScaler;
         newStats.def += 1 * levelScaler;
-
-        // Crit gains are smaller but scale slightly
-        // e.g. Level 2: +0.002, Level 10: +0.01
         newStats.crit = parseFloat((newStats.crit + (0.001 * levelScaler)).toFixed(3));
       }
 
-      // Stat Increase from Training (Training specific bonuses remain flat or small)
+      // Stat Increase from Training
       if (statType) {
         if (statType === 'crit') newStats.crit = parseFloat((newStats.crit + 0.001).toFixed(3));
         else (newStats as any)[statType] += 1;
       }
 
-      // Track Word Mastery specifically for vocab/atk gains
+      // Track Word Mastery
       if (statType === 'atk' && word) {
         newStats.masteredWordsCount = (newStats.masteredWordsCount || 0) + 1;
-        // Async database sync for mastered word (fire and forget)
         addMasteredWord(userId, word).catch(err =>
           console.error('Error adding mastered word to DB:', err)
         );
@@ -410,11 +454,23 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
           username={user?.user_metadata?.username || user?.email || 'Word Warrior'}
           level={stats.level}
           gold={warriorState.gold}
+          kp={calculateKP({
+            atk: stats.atk,
+            def: stats.def,
+            hp: stats.maxHp,
+            level: stats.level
+          }, getGearBonuses())}
         />
       )}
 
       {/* Main Content Area */}
       <main className={`flex-1 overflow-y-auto px-4 custom-scrollbar relative transition-all duration-300 ${isArenaMenuOpen ? 'blur-sm scale-95 opacity-80 pointer-events-none select-none' : ''}`}>
+        {kpNotification && (
+          <KPNotification 
+            kpGain={kpNotification.gain} 
+            promotion={kpNotification.promotion} 
+          />
+        )}
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}

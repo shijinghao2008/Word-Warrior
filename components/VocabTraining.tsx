@@ -1,10 +1,11 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
-import { CheckCircle2, RotateCcw, Zap, Target, Loader2, ArrowRight } from 'lucide-react';
+import { CheckCircle2, RotateCcw, Zap, Target, Loader2, ArrowRight, TrendingUp } from 'lucide-react';
 import { getBatchWords, getRandomDistractors, markWordProgress, getUserLearningStats, Word, LearningStats } from '../services/databaseService';
 import { useAuth } from '../contexts/AuthContext';
 import confetti from 'canvas-confetti';
+import { calculateKP, getKPRank } from '../constants';
 
 // ==========================================
 // TYPES
@@ -466,11 +467,19 @@ const VocabTraining: React.FC<VocabTrainingProps> = ({ onMastered }) => {
             <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tight ww-ink italic">
               {isPerfect ? '完美达成！' : '训练完成'}
             </h2>
-            <div className="flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-black/5">
-              <Target size={18} className="text-indigo-500" />
-              <p className="text-sm md:text-base font-bold ww-muted">
-                你掌握了 <span className="ww-ink font-black text-xl">{score}</span> / {batch.length} 个单词
-              </p>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-black/5">
+                <Target size={18} className="text-indigo-500" />
+                <p className="text-sm md:text-base font-bold ww-muted">
+                  你掌握了 <span className="ww-ink font-black text-xl">{score}</span> / {batch.length} 个单词
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+                <Zap size={18} className="text-yellow-600 fill-yellow-600" />
+                <p className="text-sm md:text-base font-bold text-yellow-700">
+                  词汇攻击力提升，战力大幅增长！
+                </p>
+              </div>
             </div>
           </div>
 

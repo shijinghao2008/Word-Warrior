@@ -1,8 +1,10 @@
 
-import React from 'react';
-import { Swords, Shield, Heart, Star, ShoppingBag, ChevronRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { Swords, Shield, Heart, Star, ShoppingBag, ChevronRight, Zap, Info } from 'lucide-react';
 import { UserStats, Rank } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
+import { calculateKP, getKPRank } from '../constants';
+import { useWarrior } from '../contexts/WarriorContext';
 
 interface StatsPanelProps {
   stats: UserStats;
@@ -13,44 +15,111 @@ interface StatsPanelProps {
 
 const StatsPanel: React.FC<StatsPanelProps> = ({ stats, username, onShopClick, onCustomClick }) => {
   const { getColorClass, avatar } = useTheme();
+  const { state: warriorState, getItemDetails } = useWarrior();
+  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+
+  const getGearBonuses = () => {
+    const bonuses = { atk: 0, def: 0, hp: 0 };
+    if (warriorState.equipped.weapon) {
+      const item = getItemDetails(warriorState.equipped.weapon);
+      if (item?.statBonus) {
+        bonuses.atk += item.statBonus.atk || 0;
+        bonuses.def += item.statBonus.def || 0;
+        bonuses.hp += item.statBonus.hp || 0;
+      }
+    }
+    if (warriorState.equipped.armor) {
+      const item = getItemDetails(warriorState.equipped.armor);
+      if (item?.statBonus) {
+        bonuses.atk += item.statBonus.atk || 0;
+        bonuses.def += item.statBonus.def || 0;
+        bonuses.hp += item.statBonus.hp || 0;
+      }
+    }
+    return bonuses;
+  };
+
+  const gear = getGearBonuses();
+  const kp = calculateKP({
+    atk: stats.atk,
+    def: stats.def,
+    hp: stats.maxHp,
+    level: stats.level
+  }, gear);
+  const currentRank = getKPRank(kp);
 
   const StatRow = ({
     icon: Icon,
     label,
     value,
     colorClassName,
+    contribution,
+    statType,
+    gearContribution = 0,
   }: {
     icon: any;
     label: string;
     value: React.ReactNode;
     colorClassName?: string;
+    contribution: number;
+    statType: string;
+    gearContribution?: number;
   }) => (
-    <div className="flex items-center justify-between gap-3 py-3 px-4 rounded-2xl bg-[rgba(255,255,255,0.35)] border-2 border-[color:var(--ww-stroke-soft)]">
+    <div 
+      className="relative flex items-center justify-between gap-3 py-3 px-4 rounded-2xl bg-[rgba(255,255,255,0.35)] border-2 border-[color:var(--ww-stroke-soft)] cursor-pointer group hover:border-[color:var(--ww-stroke)] transition-colors"
+      onClick={() => setActiveTooltip(activeTooltip === statType ? null : statType)}
+    >
       <div className="flex items-center gap-2 min-w-0">
         <Icon size={14} className={colorClassName ?? 'text-[color:var(--ww-stroke)]'} />
         <span className="text-[13px] font-black uppercase tracking-widest ww-muted truncate">{label}</span>
       </div>
-      <div className="text-sm font-black ww-ink tabular-nums">{value}</div>
+      <div className="flex items-center gap-2">
+        <div className="text-sm font-black ww-ink tabular-nums">{value}</div>
+        <Info size={12} className="ww-muted opacity-50" />
+      </div>
+
+      {activeTooltip === statType && (
+        <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-2 px-3 rounded-lg z-10 w-48 shadow-xl animate-in fade-in zoom-in duration-200">
+          <div className="font-bold mb-1">当前 {statType} 贡献了 {(contribution + gearContribution).toLocaleString()} 点战力！</div>
+          {gearContribution > 0 && (
+            <div className="text-yellow-400 mb-1">(其中装备贡献了 {gearContribution} 点)</div>
+          )}
+          <div className="opacity-80">继续提升 {statType} 以获得更多 KP！</div>
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 bg-slate-800 rotate-45" />
+        </div>
+      )}
     </div>
   );
 
   return (
     <div className="space-y-8">
-      {/* Big avatar */}
+      {/* Big avatar with Rank Border */}
       <div className="flex flex-col items-center text-center gap-4">
-        <div
-          className="w-40 h-40 md:w-44 md:h-44 rounded-[999px] bg-[rgba(252,203,89,0.95)] shadow-2xl relative overflow-hidden flex items-center justify-center"
-          style={{ border: '4px solid var(--ww-stroke)' }}
-        >
-          {avatar.startsWith('data:image') || avatar.startsWith('http') ? (
-            <img src={avatar} alt="User Avatar" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-6xl">{avatar}</span>
-          )}
+        <div className="relative group">
+          {/* Rank Badge Floating */}
+          <div className={`absolute -top-2 -right-2 z-10 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter shadow-lg border-2 ${currentRank.bg} ${currentRank.color} ${currentRank.border} transform -rotate-12 group-hover:rotate-0 transition-transform`}>
+            {currentRank.name}
+          </div>
+          
+          <div
+            className={`w-40 h-40 md:w-44 md:h-44 rounded-[999px] bg-[rgba(252,203,89,0.95)] shadow-2xl relative overflow-hidden flex items-center justify-center border-4 ${currentRank.border}`}
+          >
+            {avatar.startsWith('data:image') || avatar.startsWith('http') ? (
+              <img src={avatar} alt="User Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-6xl">{avatar}</span>
+            )}
+          </div>
         </div>
 
-        <div>
-          <h2 className="text-2xl font-black rpg-font uppercase tracking-tighter ww-ink">
+        <div className="space-y-1">
+          <div className="flex items-center justify-center gap-2">
+            <Zap size={20} className="text-yellow-500 fill-yellow-500 animate-pulse" />
+            <span className="text-3xl font-black italic tracking-tighter text-yellow-600 drop-shadow-sm">
+              {kp.toLocaleString()}
+            </span>
+          </div>
+          <h2 className="text-xl font-black rpg-font uppercase tracking-tighter ww-ink flex items-center justify-center gap-2">
             {username || '战士档案'}
           </h2>
         </div>
@@ -60,7 +129,9 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ stats, username, onShopClick, o
       <div className="grid grid-cols-1 gap-3">
         <StatRow
           icon={Star}
-          label="等级（含成长进度）"
+          label="等级与经验"
+          statType="Level"
+          contribution={stats.level * 100}
           value={
             <span>
               Lv.{stats.level}{' '}
@@ -69,9 +140,33 @@ const StatsPanel: React.FC<StatsPanelProps> = ({ stats, username, onShopClick, o
           }
           colorClassName={getColorClass('text', 500)}
         />
-        <StatRow icon={Heart} label="生命上限 (HP)" value={stats.maxHp} colorClassName="text-fuchsia-600" />
-        <StatRow icon={Swords} label="词汇攻击 (ATK)" value={stats.atk} colorClassName="text-blue-600" />
-        <StatRow icon={Shield} label="语法防御 (DEF)" value={stats.def} colorClassName="text-emerald-600" />
+        <StatRow 
+          icon={Heart} 
+          label="生命上限 (HP)" 
+          statType="HP"
+          contribution={stats.maxHp * 2}
+          gearContribution={gear.hp * 2}
+          value={stats.maxHp + (gear.hp > 0 ? ` (+${gear.hp})` : '')} 
+          colorClassName="text-fuchsia-600" 
+        />
+        <StatRow 
+          icon={Swords} 
+          label="词汇攻击 (ATK)" 
+          statType="ATK"
+          contribution={stats.atk * 10}
+          gearContribution={gear.atk * 10}
+          value={stats.atk + (gear.atk > 0 ? ` (+${gear.atk})` : '')} 
+          colorClassName="text-blue-600" 
+        />
+        <StatRow 
+          icon={Shield} 
+          label="语法防御 (DEF)" 
+          statType="DEF"
+          contribution={stats.def * 15}
+          gearContribution={gear.def * 15}
+          value={stats.def + (gear.def > 0 ? ` (+${gear.def})` : '')} 
+          colorClassName="text-emerald-600" 
+        />
       </div>
 
       {/* Shop Button (Big Entry) */}
