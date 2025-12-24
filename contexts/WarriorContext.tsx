@@ -42,7 +42,45 @@ export const WarriorProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const [state, setState] = useState<WarriorState>(DEFAULT_STATE);
     const [loaded, setLoaded] = useState(false);
 
-    // Load state on mount/user change
+    // 1. Realtime Gold Sync
+    useEffect(() => {
+        if (!userId) return;
+
+        // Fetch initial gold separately to ensure it's authoritative
+        const fetchGold = async () => {
+            const { data } = await supabase
+                .from('user_stats')
+                .select('gold')
+                .eq('user_id', userId)
+                .single();
+            if (data && data.gold !== undefined) {
+                setState(prev => ({ ...prev, gold: data.gold }));
+            }
+        };
+        fetchGold();
+
+        // Subscribe to changes in user_stats for this user
+        const channel = supabase
+            .channel(`public:user_stats:user_id=eq.${userId}`)
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'user_stats',
+                filter: `user_id=eq.${userId}`
+            }, (payload) => {
+                if (payload.new && payload.new.gold !== undefined) {
+                    console.log('💰 Gold updated via Realtime:', payload.new.gold);
+                    setState(prev => ({ ...prev, gold: payload.new.gold }));
+                }
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [userId]);
+
+    // 2. Load other state on mount/user change (inventory, appearance etc)
     useEffect(() => {
         if (!userId) return;
         const saved = localStorage.getItem(`ww_warrior_${userId}`);
@@ -100,8 +138,16 @@ export const WarriorProvider: React.FC<{ children: React.ReactNode }> = ({ child
         localStorage.setItem(`ww_warrior_${userId}`, JSON.stringify(state));
     }, [state, userId, loaded]);
 
-    const addGold = (amount: number) => {
+    const addGold = async (amount: number) => {
         setState(prev => ({ ...prev, gold: prev.gold + amount }));
+
+        if (userId) {
+            const { error } = await supabase.rpc('increment_user_gold', { 
+                x_user_id: userId, 
+                x_amount: amount 
+            });
+            if (error) console.error("Failed to sync gold to DB:", error);
+        }
     };
 
     const buyItem = (itemId: string): boolean => {
@@ -116,6 +162,14 @@ export const WarriorProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 gold: prev.gold - item.price,
                 inventory: [...prev.inventory, itemId]
             }));
+
+            // Sync to DB
+            if (userId) {
+                supabase.rpc('increment_user_gold', { 
+                    x_user_id: userId, 
+                    x_amount: -item.price 
+                }).catch(err => console.error("Failed to sync purchase to DB:", err));
+            }
             return true;
         }
         return false;
@@ -154,6 +208,14 @@ export const WarriorProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 gold: prev.gold - 100,
                 unlockedColors: [...prev.unlockedColors, colorId]
             }));
+
+            // Sync to DB
+            if (userId) {
+                supabase.rpc('increment_user_gold', { 
+                    x_user_id: userId, 
+                    x_amount: -100 
+                }).catch(err => console.error("Failed to sync color unlock to DB:", err));
+            }
             return true;
         }
         return false;
