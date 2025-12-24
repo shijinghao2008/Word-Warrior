@@ -10,6 +10,7 @@ import { useWarrior } from '../contexts/WarriorContext';
 import { soundService } from '../services/soundService';
 import BattleScene from './Warrior/BattleScene';
 import { supabase } from '../services/supabaseClient';
+import { generateWordBlitzQuestions } from '../services/databaseService';
 import { findWordBlitzMatch, cancelWordBlitzMatchmaking, submitWordBlitzAnswer, getOpponentProfile, checkWordBlitzMatchStatus, abandonWordBlitzMatch, claimWordBlitzVictory, PvPRoom } from '../services/pvpService';
 import { findGrammarMatch, cancelGrammarMatchmaking, submitGrammarAnswer, checkGrammarMatchStatus, abandonGrammarMatch, claimGrammarVictory } from '../services/grammarPvpService';
 
@@ -497,14 +498,23 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
     console.log('🤖 Starting AI Match...');
     await cancelSearchImpl(true);
 
-    let mockQuestions;
-    if (mode === 'pvp_tactics') mockQuestions = MOCK_GRAMMAR_QUESTIONS;
-    else mockQuestions = MOCK_VOCAB_CARDS;
-
-    // Shuffle questions
-    const selectedQuestions = [...mockQuestions]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 5); // Take 5 questions for quick match
+    let selectedQuestions;
+    if (mode === 'pvp_tactics') {
+      selectedQuestions = [...MOCK_GRAMMAR_QUESTIONS]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 5);
+    } else {
+      // Fetch Collins 4-5 stars words for Word Blitz AI match
+      const dbQuestions = await generateWordBlitzQuestions(10);
+      if (dbQuestions && dbQuestions.length > 0) {
+        selectedQuestions = dbQuestions.slice(0, 5);
+      } else {
+        // Fallback to mock if DB fails
+        selectedQuestions = [...MOCK_VOCAB_CARDS]
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 5);
+      }
+    }
 
     setQuestions(selectedQuestions);
 

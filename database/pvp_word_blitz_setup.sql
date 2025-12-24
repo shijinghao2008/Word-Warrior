@@ -36,6 +36,7 @@ BEGIN
     WITH candidate_words AS (
         SELECT * FROM words 
         WHERE translation IS NOT NULL AND translation != ''
+        AND collins IN (4, 5) -- Only include Collins 4 and 5 stars
         ORDER BY random() 
         LIMIT p_limit
     ),

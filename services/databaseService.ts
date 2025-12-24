@@ -550,3 +550,21 @@ export const getRandomDistractors = async (excludeWordId: string, limit: number 
 
     return (data || []) as Word[];
 };
+
+/**
+ * Generate Word Blitz questions for AI match
+ * Uses database function that now filters for Collins 4-5 stars
+ */
+export const generateWordBlitzQuestions = async (limit: number = 10): Promise<any[]> => {
+    const { data, error } = await supabase
+        .rpc('generate_pvp_word_blitz_questions', {
+            p_limit: limit
+        });
+
+    if (error) {
+        console.error('Error generating Word Blitz questions:', error);
+        return [];
+    }
+
+    return data || [];
+};
