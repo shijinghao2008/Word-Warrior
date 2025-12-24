@@ -224,14 +224,14 @@ const VocabTraining: React.FC<VocabTrainingProps> = ({ onMastered }) => {
 
   // Persistence logic
   useEffect(() => {
-    if (mode !== 'loading' && mode !== 'summary') {
+    if (user?.id && mode !== 'loading' && mode !== 'summary') {
       const session = {
         mode,
         batch,
         currentIndex,
         quizQuestions,
         score,
-        userId: user?.id
+        userId: user.id
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
     }
