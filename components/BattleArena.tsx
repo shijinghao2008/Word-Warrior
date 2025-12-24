@@ -259,6 +259,23 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
     cleanupRef.current.searchTimer = searchTimerRef.current;
   }); // Run on every render to ensure refs are fresh if they were mutated directly
 
+  // Helper: Format and truncate long option text
+  const formatOption = (text: string) => {
+    if (!text) return '';
+    // Replace literal \n with real newlines
+    let formatted = text.replace(/\\n/g, '\n');
+    
+    // If text is very long (e.g., dictionary dump), take only first 3 lines or first 60 chars
+    const lines = formatted.split('\n');
+    if (lines.length > 3) {
+      formatted = lines.slice(0, 3).join('\n') + '...';
+    } else if (formatted.length > 80) {
+      formatted = formatted.substring(0, 77) + '...';
+    }
+    
+    return formatted;
+  };
+
   // ============================================
   // PVP LOGIC (BLITZ MODE)
   // ============================================
@@ -1444,7 +1461,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
                       onClick={() => handleChoice(opt)}
                       disabled={hasAnsweredCurrent || !isGameConnected}
                       className={[
-                        'ww-choice p-3 md:p-8 text-[11px] md:text-base active:scale-[0.99] disabled:cursor-not-allowed transition-colors',
+                        'ww-choice p-2 md:p-8 text-[10px] md:text-base active:scale-[0.99] disabled:cursor-not-allowed transition-colors h-[80px] md:h-[120px] flex items-center justify-center overflow-hidden',
                         selectedOption
                           ? (opt === selectedOption
                             ? (opt === questions[currentQIndex]?.correctAnswer
@@ -1454,8 +1471,8 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
                           : ''
                       ].join(' ')}
                     >
-                      <span className="whitespace-pre-line">
-                        {opt.replace(/\\n/g, '\n')}
+                      <span className="whitespace-pre-line line-clamp-3 overflow-hidden text-center w-full">
+                        {formatOption(opt)}
                       </span>
                     </button>
                   ))}
@@ -1492,7 +1509,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
                   onClick={() => handleChoice(opt)}
                   disabled={hasAnsweredCurrent || !isGameConnected}
                   className={[
-                    'ww-choice p-3 md:p-6 text-[11px] md:text-lg active:scale-[0.99] disabled:opacity-50 transition-colors',
+                    'ww-choice p-2 md:p-6 text-[10px] md:text-lg active:scale-[0.99] disabled:opacity-50 transition-colors h-[80px] md:h-[120px] flex items-center justify-center overflow-hidden',
                     selectedOption
                       ? (opt === selectedOption
                         ? (opt === questions[currentQIndex]?.correctAnswer
@@ -1502,7 +1519,9 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
                       : ''
                   ].join(' ')}
                 >
-                  <span className="whitespace-pre-line">{opt}</span>
+                  <span className="whitespace-pre-line line-clamp-3 overflow-hidden text-center w-full">
+                    {formatOption(opt)}
+                  </span>
                 </button>
               )) || (
                   <div className="col-span-2 text-slate-500 animate-pulse">等待服务器下发题目…</div>
@@ -1534,7 +1553,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
                   onClick={() => handleChoice(opt)}
                   disabled={hasAnsweredCurrent || !isGameConnected}
                   className={[
-                    'ww-choice p-3 md:p-6 text-[11px] md:text-lg active:scale-[0.99] disabled:opacity-50 transition-colors',
+                    'ww-choice p-2 md:p-6 text-[10px] md:text-lg active:scale-[0.99] disabled:opacity-50 transition-colors h-[80px] md:h-[120px] flex items-center justify-center overflow-hidden',
                     selectedOption
                       ? (opt === selectedOption
                         ? (opt === questions[currentQIndex]?.correctAnswer
@@ -1544,7 +1563,9 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
                       : ''
                   ].join(' ')}
                 >
-                  <span className="whitespace-pre-line">{opt}</span>
+                  <span className="whitespace-pre-line line-clamp-3 overflow-hidden text-center w-full">
+                    {formatOption(opt)}
+                  </span>
                 </button>
               )) || (
                   <div className="col-span-2 text-slate-500 animate-pulse">等待服务器下发题目…</div>
