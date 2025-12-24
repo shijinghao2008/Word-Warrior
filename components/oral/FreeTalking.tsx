@@ -9,6 +9,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 interface FreeTalkingProps {
     onSuccess: (exp: number) => void;
     onClose?: () => void;
+    onMount?: () => void;
 }
 
 type SessionState = 'setup' | 'countdown' | 'talking' | 'finished';
@@ -30,8 +31,12 @@ const AI_LEVELS = [
 
 const CONVERSATION_DURATION = 180; // 3 minutes in seconds
 
-const FreeTalking: React.FC<FreeTalkingProps> = ({ onSuccess, onClose }) => {
+const FreeTalking: React.FC<FreeTalkingProps> = ({ onSuccess, onClose, onMount }) => {
     const { getColorClass, primaryColor } = useTheme();
+
+    useEffect(() => {
+        onMount?.();
+    }, []);
 
     // State
     const [sessionState, setSessionState] = useState<SessionState>('setup');

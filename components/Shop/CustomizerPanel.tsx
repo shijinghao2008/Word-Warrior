@@ -66,8 +66,8 @@ const CustomizerPanel: React.FC<CustomizerPanelProps> = ({ onClose }) => {
 
                 <div className="flex flex-col md:flex-row p-6 gap-8 overflow-hidden h-full">
                     {/* Preview Area */}
-                    <div className="w-full md:w-1/2 rounded-2xl bg-[rgba(26,15,40,0.05)] border-2 border-[color:var(--ww-stroke-soft)] relative overflow-hidden flex items-center justify-center min-h-[300px]">
-                        <div className="scale-100">
+                    <div className="w-full md:w-1/3 md:h-auto basis-1/3 rounded-2xl bg-[rgba(26,15,40,0.05)] border-2 border-[color:var(--ww-stroke-soft)] relative overflow-hidden flex items-center justify-center min-h-[180px] md:min-h-[300px]">
+                        <div className="scale-75 md:scale-100">
                             <WarriorPreview
                                 skinColor={state.appearance.skinColor}
                                 hairColor={state.appearance.hairColor}
@@ -85,7 +85,7 @@ const CustomizerPanel: React.FC<CustomizerPanelProps> = ({ onClose }) => {
                     </div>
 
                     {/* Controls */}
-                    <div className="w-full md:w-1/2 flex flex-col gap-6 overflow-hidden">
+                    <div className="w-full md:w-2/3 md:h-auto basis-2/3 flex flex-col gap-6 overflow-hidden">
                         <div className="space-y-4 flex flex-col h-full overflow-hidden">
                             <h3 className="text-sm font-black ww-ink uppercase tracking-wider flex items-center gap-2 shrink-0">
                                 <span className="w-1 h-4 bg-[color:var(--ww-brand)] rounded-full"></span>

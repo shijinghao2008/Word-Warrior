@@ -9,9 +9,10 @@ import { Mic2 } from 'lucide-react';
 interface OralTrainingProps {
   playerStats: any;
   onSuccess: (exp: number, gold?: number) => void;
+  onToggleStatusBar?: (hidden: boolean) => void;
 }
 
-const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) => {
+const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess, onToggleStatusBar }) => {
   const { getColorClass } = useTheme();
   const { user } = useAuth();
 
@@ -68,11 +69,19 @@ const OralTraining: React.FC<OralTrainingProps> = ({ playerStats, onSuccess }) =
             userId={user?.id || ''}
             onSuccess={onSuccess}
             onClose={() => setMode('assessment')}
+            onToggleStatusBar={onToggleStatusBar}
           />
         </div>
       ) : (
         <div className="mt-4">
-          <FreeTalking onSuccess={onSuccess} onClose={() => setMode('assessment')} />
+          <FreeTalking
+            onSuccess={onSuccess}
+            onClose={() => {
+              setMode('assessment');
+              onToggleStatusBar?.(false);
+            }}
+            onMount={() => onToggleStatusBar?.(true)}
+          />
         </div>
       )}
 

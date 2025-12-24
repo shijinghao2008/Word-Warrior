@@ -10,9 +10,10 @@ import { BookOpen, Loader } from 'lucide-react';
 
 interface ReadingTrainingProps {
   onSuccess: (exp: number, gold?: number) => void;
+  onToggleStatusBar?: (hidden: boolean) => void;
 }
 
-const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess }) => {
+const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess, onToggleStatusBar }) => {
   const { user } = useAuth();
   const [materials, setMaterials] = useState<ReadingMaterial[]>([]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
@@ -27,12 +28,6 @@ const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess }) => {
   useEffect(() => {
     fetchMaterials();
   }, []);
-
-  // ... (omitting identical lines for brevity in instruction, actual implementation assumes structure)
-  // Need precise targeting. Let's do state first then handler.
-
-  // Better to do two separate replaces if chunks are far apart.
-  // Adding state near line 24.
 
   const fetchMaterials = async () => {
     try {
@@ -54,6 +49,7 @@ const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess }) => {
   const handleSelectMaterial = (material: ReadingMaterial) => {
     setSelectedMaterial(material);
     setMode('read');
+    onToggleStatusBar?.(true);
   };
 
 
@@ -61,6 +57,7 @@ const ReadingTraining: React.FC<ReadingTrainingProps> = ({ onSuccess }) => {
   const handleBackToList = () => {
     setSelectedMaterial(null);
     setMode('list');
+    onToggleStatusBar?.(false);
   };
 
   const handleNextMaterial = () => {

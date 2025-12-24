@@ -10,9 +10,10 @@ import XPNotification from './ui/XPNotification';
 
 interface ListeningTrainingProps {
   onSuccess: (exp: number, gold?: number) => void;
+  onToggleStatusBar?: (hidden: boolean) => void;
 }
 
-const ListeningTraining: React.FC<ListeningTrainingProps> = ({ onSuccess }) => {
+const ListeningTraining: React.FC<ListeningTrainingProps> = ({ onSuccess, onToggleStatusBar }) => {
   const { user } = useAuth();
   const [materials, setMaterials] = useState<ListeningMaterial[]>([]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
@@ -49,11 +50,13 @@ const ListeningTraining: React.FC<ListeningTrainingProps> = ({ onSuccess }) => {
   const handleSelectMaterial = (material: ListeningMaterial) => {
     setSelectedMaterial(material);
     setMode('read');
+    onToggleStatusBar?.(true);
   };
 
   const handleBackToList = () => {
     setSelectedMaterial(null);
     setMode('list');
+    onToggleStatusBar?.(false);
     fetchMaterials(); // Refresh status
   };
 

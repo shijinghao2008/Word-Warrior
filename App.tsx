@@ -336,36 +336,52 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
     </div>
   );
 
+  const [isStatusBarHidden, setIsStatusBarHidden] = useState(false);
+
+  // Reset status bar visibility when changing tabs
+  useEffect(() => {
+    setIsStatusBarHidden(false);
+  }, [activeTab]);
+
   const renderContent = () => {
     switch (activeTab) {
       case 'vocab': return <VocabTraining onMastered={(word) => handleGainExp(1, 'atk', word)} />;
       case 'scholar': return renderScholarPath();
       case 'leaderboard': return <div className="pb-32"><Leaderboard /></div>;
       case 'profile': return renderProfile();
-      case 'reading': return <div className="h-full"><ReadingTraining onSuccess={(exp, gold) => {
-        handleGainExp(exp, 'hp');
-        if (gold) {
-          addGold(gold);
-        }
-      }} /></div>;
-      case 'writing': return <div className="h-full"><WritingTraining onSuccess={(exp, gold) => {
-        handleGainExp(exp, 'atk');
-        if (gold) {
-          addGold(gold);
-        }
-      }} /></div>;
-      case 'listening': return <div className="h-full"><ListeningTraining onSuccess={(exp, gold) => {
-        handleGainExp(exp, 'def');
-        if (gold) {
-          addGold(gold);
-        }
-      }} /></div>;
-      case 'oral': return <div className="h-full"><OralTraining playerStats={stats} onSuccess={(exp, gold) => {
-        handleGainExp(exp);
-        if (gold) {
-          addGold(gold);
-        }
-      }} /></div>;
+      case 'reading': return <div className="h-full"><ReadingTraining
+        onToggleStatusBar={setIsStatusBarHidden}
+        onSuccess={(exp, gold) => {
+          handleGainExp(exp, 'hp');
+          if (gold) {
+            addGold(gold);
+          }
+        }} /></div>;
+      case 'writing': return <div className="h-full"><WritingTraining
+        onToggleStatusBar={setIsStatusBarHidden}
+        onSuccess={(exp, gold) => {
+          handleGainExp(exp, 'atk');
+          if (gold) {
+            addGold(gold);
+          }
+        }} /></div>;
+      case 'listening': return <div className="h-full"><ListeningTraining
+        onToggleStatusBar={setIsStatusBarHidden}
+        onSuccess={(exp, gold) => {
+          handleGainExp(exp, 'def');
+          if (gold) {
+            addGold(gold);
+          }
+        }} /></div>;
+      case 'oral': return <div className="h-full"><OralTraining
+        playerStats={stats}
+        onToggleStatusBar={setIsStatusBarHidden}
+        onSuccess={(exp, gold) => {
+          handleGainExp(exp);
+          if (gold) {
+            addGold(gold);
+          }
+        }} /></div>;
       case 'pvp_blitz':
       case 'pvp_tactics':
         return <div className="h-full"><BattleArena mode={activeTab} playerStats={stats} onVictory={() => setActiveTab('vocab')} onDefeat={() => setActiveTab('vocab')} /></div>;
@@ -386,9 +402,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
   return (
     <div className="h-screen flex flex-col transition-colors duration-500 overflow-hidden ww-app">
       {/* Mini Header */}
-
-      {/* Mini Header */}
-      {!showShop && !showCustomizer && (
+      {!showShop && !showCustomizer && !isStatusBarHidden && (
         <TopStatusBar
           avatar={avatar}
           username={user?.user_metadata?.username || user?.email || 'Word Warrior'}

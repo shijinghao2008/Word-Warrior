@@ -9,9 +9,10 @@ import { PenTool, Loader } from 'lucide-react';
 
 interface WritingTrainingProps {
   onSuccess: (exp: number, gold?: number) => void;
+  onToggleStatusBar?: (hidden: boolean) => void;
 }
 
-const WritingTraining: React.FC<WritingTrainingProps> = ({ onSuccess }) => {
+const WritingTraining: React.FC<WritingTrainingProps> = ({ onSuccess, onToggleStatusBar }) => {
   const { user } = useAuth();
   const [materials, setMaterials] = useState<WritingMaterial[]>([]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
@@ -43,11 +44,13 @@ const WritingTraining: React.FC<WritingTrainingProps> = ({ onSuccess }) => {
   const handleSelect = (material: WritingMaterial) => {
     setSelectedMaterial(material);
     setMode('write');
+    onToggleStatusBar?.(true);
   };
 
   const handleBack = () => {
     setSelectedMaterial(null);
     setMode('list');
+    onToggleStatusBar?.(false);
     // Refresh completed status on back?
     fetchData();
   };

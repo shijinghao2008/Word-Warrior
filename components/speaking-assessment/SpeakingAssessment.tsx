@@ -33,6 +33,7 @@ interface SpeakingAssessmentProps {
     userId: string;
     onSuccess: (exp: number, gold?: number) => void;
     onClose?: () => void;
+    onToggleStatusBar?: (hidden: boolean) => void;
 }
 
 type ViewState = 'selection' | 'recording' | 'evaluating' | 'result' | 'history';
@@ -57,6 +58,7 @@ const SpeakingAssessment: React.FC<SpeakingAssessmentProps> = ({
     userId,
     onSuccess,
     onClose,
+    onToggleStatusBar,
 }) => {
     const { getColorClass, primaryColor } = useTheme();
 
@@ -179,6 +181,7 @@ const SpeakingAssessment: React.FC<SpeakingAssessmentProps> = ({
         setRecordingDuration(0);
         setAssessmentResult(null);
         setExpAwarded(0);
+        onToggleStatusBar?.(false);
     };
 
     // ===== RENDER FUNCTIONS =====
@@ -287,6 +290,7 @@ const SpeakingAssessment: React.FC<SpeakingAssessmentProps> = ({
                                 onClick={() => {
                                     setSelectedQuestion(question);
                                     setViewState('recording');
+                                    onToggleStatusBar?.(true);
                                 }}
                                 className="w-full p-4 rounded-[22px] border-2 text-left transition-all"
                                 style={{ borderColor: 'rgba(43,23,63,0.22)', background: 'rgba(255,255,255,0.22)', boxShadow: '0 10px 18px rgba(0,0,0,0.10)' }}

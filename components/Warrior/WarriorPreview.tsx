@@ -132,7 +132,7 @@ const WarriorPreview: React.FC<WarriorPreviewProps> = (props) => {
         }
     }
 
-    return <div ref={parentEl} className="w-full h-full flex items-center justify-center rounded-2xl overflow-hidden bg-slate-800/50" />;
+    return <div ref={parentEl} className="w-full h-full flex items-center justify-center rounded-2xl overflow-hidden" />;
 };
 
 export default WarriorPreview;
