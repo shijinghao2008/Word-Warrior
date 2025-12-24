@@ -502,17 +502,17 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
     if (mode === 'pvp_tactics') {
       selectedQuestions = [...MOCK_GRAMMAR_QUESTIONS]
         .sort(() => Math.random() - 0.5)
-        .slice(0, 5);
+        .slice(0, 20);
     } else {
       // Fetch Collins 4-5 stars words for Word Blitz AI match
-      const dbQuestions = await generateWordBlitzQuestions(10);
+      const dbQuestions = await generateWordBlitzQuestions(20);
       if (dbQuestions && dbQuestions.length > 0) {
-        selectedQuestions = dbQuestions.slice(0, 5);
+        selectedQuestions = dbQuestions.slice(0, 20);
       } else {
         // Fallback to mock if DB fails
         selectedQuestions = [...MOCK_VOCAB_CARDS]
           .sort(() => Math.random() - 0.5)
-          .slice(0, 5);
+          .slice(0, 20);
       }
     }
 
@@ -1028,11 +1028,14 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
             setStatus('V.S.');
           }, 1000);
         } else {
-          // End of questions - check HP winner?
-          // Or just loop? Let's end for now.
+          // End of questions - loop back to keep battle going until someone dies
           setTimeout(() => {
-            if (playerHp > enemyHp) handleLocalGameOver('won');
-            else handleLocalGameOver('lost');
+            setCurrentQIndex(0);
+            setHasAnsweredCurrent(false);
+            setTimeLeft(10);
+            const q = questions[0];
+            setShuffledOptions([...q.options].sort(() => Math.random() - 0.5));
+            setStatus('V.S.');
           }, 1000);
         }
       }, 500);
@@ -1413,7 +1416,9 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
                           : ''
                       ].join(' ')}
                     >
-                      {opt}
+                      <span className="whitespace-pre-line">
+                        {opt.replace(/\\n/g, '\n')}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -1459,7 +1464,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
                       : ''
                   ].join(' ')}
                 >
-                  {opt}
+                  <span className="whitespace-pre-line">{opt}</span>
                 </button>
               )) || (
                   <div className="col-span-2 text-slate-500 animate-pulse">等待服务器下发题目…</div>
@@ -1501,7 +1506,7 @@ const BattleArena: React.FC<BattleArenaProps> = ({ mode, playerStats, onVictory,
                       : ''
                   ].join(' ')}
                 >
-                  {opt}
+                  <span className="whitespace-pre-line">{opt}</span>
                 </button>
               )) || (
                   <div className="col-span-2 text-slate-500 animate-pulse">等待服务器下发题目…</div>
