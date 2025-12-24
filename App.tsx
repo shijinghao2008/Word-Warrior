@@ -89,7 +89,9 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
 
     const timer = setTimeout(() => {
       console.log('Syncing stats to database:', stats);
-      updateUserStats(userId, stats);
+      // Exclude gold from sync here as it's managed via WarriorContext + RPC
+      const { gold, ...statsToSync } = stats;
+      updateUserStats(userId, statsToSync);
       // Also update local storage as backup
       localStorage.setItem(`ww_stats_${userId}`, JSON.stringify(stats));
     }, 2000);
