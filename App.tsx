@@ -387,34 +387,27 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
         onToggleStatusBar={setIsStatusBarHidden}
         onSuccess={(exp, gold) => {
           handleGainExp(exp, 'hp');
-          if (gold) {
-            addGold(gold);
-          }
+          // Gold and XP are handled authoritatively by readingService.completeReading
+          // handleGainExp handles local snappy UI for stats
         }} /></div>;
       case 'writing': return <div className="h-full"><WritingTraining
         onToggleStatusBar={setIsStatusBarHidden}
         onSuccess={(exp, gold) => {
           handleGainExp(exp, 'atk');
-          if (gold) {
-            addGold(gold);
-          }
+          // Gold and XP are handled authoritatively by writingService.submitWriting
         }} /></div>;
       case 'listening': return <div className="h-full"><ListeningTraining
         onToggleStatusBar={setIsStatusBarHidden}
         onSuccess={(exp, gold) => {
           handleGainExp(exp, 'def');
-          if (gold) {
-            addGold(gold);
-          }
+          // Gold and XP are handled authoritatively by listeningService.completeListening
         }} /></div>;
       case 'oral': return <div className="h-full"><OralTraining
         playerStats={stats}
         onToggleStatusBar={setIsStatusBarHidden}
         onSuccess={(exp, gold) => {
           handleGainExp(exp);
-          if (gold) {
-            addGold(gold);
-          }
+          // Gold and XP are handled authoritatively by speakingAssessmentService.saveAssessment
         }} /></div>;
       case 'pvp_blitz':
       case 'pvp_tactics':
