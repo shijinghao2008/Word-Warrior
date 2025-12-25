@@ -91,7 +91,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
     prevKPRef.current = currentKP;
   }, [warriorState.equipped, stats.level, stats.atk, stats.def, stats.maxHp]);
 
-  const handleGainExp = (exp: number, statType?: 'atk' | 'def' | 'crit' | 'hp', gold: number = 0, isMastered?: boolean) => {
+  const handleGainExp = (exp: number, statType?: 'atk' | 'def' | 'crit' | 'hp', gold: number = 0, isMastered?: boolean, statAmount: number = 1) => {
     // 1. Immediate RPG Feedback (Local)
     let newStats = { ...stats, exp: stats.exp + exp };
 
@@ -104,15 +104,20 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
       leveledUp = true;
       const levelScaler = newStats.level;
       newStats.maxHp += 10 * levelScaler;
-      newStats.hp = newStats.maxHp;
+      newStats.hp += 10 * levelScaler;
       newStats.atk += 1 * levelScaler;
       newStats.def += 1 * levelScaler;
-      newStats.crit = parseFloat((newStats.crit + (0.001 * levelScaler)).toFixed(3));
+      newStats.crit = parseFloat((newStats.crit + (0 * levelScaler)).toFixed(3));
     }
 
     if (statType) {
-      if (statType === 'crit') newStats.crit = parseFloat((newStats.crit + 0.001).toFixed(3));
-      else (newStats as any)[statType] += 1;
+      if (statType === 'crit') newStats.crit = parseFloat((newStats.crit + 0).toFixed(3));
+      else if (statType === 'hp') {
+        newStats.maxHp += statAmount;
+        newStats.hp += statAmount;
+      } else {
+        (newStats as any)[statType] += statAmount;
+      }
     }
 
     if (isMastered) {
@@ -133,7 +138,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
         updateUserStats(userId, { 
           level: newStats.level, 
           maxHp: newStats.maxHp,
-          hp: newStats.maxHp,
+          hp: newStats.hp,
           atk: newStats.atk,
           def: newStats.def,
           crit: newStats.crit,
@@ -145,13 +150,19 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
         
         // Sync specific stat if any
         if (statType) {
-          const columnMap: Record<string, string> = {
-            atk: 'atk',
-            def: 'def',
-            crit: 'crit',
-            hp: 'hp'
-          };
-          incrementUserStat(userId, columnMap[statType], 1);
+          if (statType === 'hp') {
+            updateUserStats(userId, {
+              maxHp: newStats.maxHp,
+              hp: newStats.hp
+            });
+          } else {
+            const columnMap: Record<string, string> = {
+              atk: 'atk',
+              def: 'def',
+              crit: 'crit'
+            };
+            incrementUserStat(userId, columnMap[statType], statAmount);
+          }
         }
       }
     }
@@ -383,7 +394,7 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
       case 'reading': return <div className="h-full"><ReadingTraining
         onToggleStatusBar={setIsStatusBarHidden}
         onSuccess={(exp, gold) => {
-          handleGainExp(exp, 'hp', gold);
+          handleGainExp(exp, 'hp', gold, undefined, 10);
         }} /></div>;
       case 'writing': return <div className="h-full"><WritingTraining
         onToggleStatusBar={setIsStatusBarHidden}
