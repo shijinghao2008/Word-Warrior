@@ -1,127 +1,114 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Word Warrior (单词战士)
 
-# Word Warrior (单词大乱斗)
+![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Version](https://img.shields.io/badge/version-0.0.0-green.svg)
 
-一个结合 RPG 元素的英语学习应用,通过游戏化的方式提升词汇、语法、听力、口语和写作能力。
+**Word Warrior** is a Web application that deeply integrates **RPG elements** with **English learning**. Players improve their character's attributes (ATK, DEF, HP, EXP) by completing various English training tasks (Listening, Speaking, Reading, Writing, Vocabulary) and compete with opponents in real-time or simulated PvP battles using these attributes.
 
-## 技术栈
+**Word Warrior (单词战士)** 是一款将 **RPG 角色扮演元素** 与 **英语学习** 深度结合的 Web 应用程序。玩家通过完成各种英语专项训练（听、说、读、写、词汇）来提升角色的属性（攻击力、防御力、生命值、经验值），并在实时或模拟的 PvP 对战中利用这些属性击败对手。
 
-- **前端**: React + TypeScript + Vite
-- **UI**: Tailwind CSS + Framer Motion
-- **AI**: Google Gemini API
-- **数据库**: Supabase (PostgreSQL)
+---
 
-## 快速开始
+## 🌟 Core Concepts / 核心理念
 
-### 1. 安装依赖
+- **Learning as Training / 学习即修行**: Exercises are wrapped as "Trials", "Training", and "Workshops".
+- **Attribute Mapping / 属性映射**:
+  - **Vocab/Writing** -> **ATK (攻击力)**
+  - **Listening/Grammar** -> **DEF (防御力)**
+  - **Reading** -> **HP (生命值)**
+  - **Speaking** -> **EXP (经验值)**
+- **Real-time Battle / 实时对战**: Synchronous competitive quizzes via Supabase Realtime.
 
-```bash
-npm install
-```
+---
 
-### 2. 配置环境变量
+## 🚀 Features / 功能特性
 
-创建 `.env.local` 文件(参考 `.env.local.example`):
+### 🎮 Gameplay / 核心玩法
+1.  **Vocab Training (词汇训练)**: Flashcards and Quizzes to earn Gold and ATK.
+2.  **Scholar Path (学习之路)**:
+    -   **Listening (听力磨炼)**: Audio tasks to boost DEF.
+    -   **Reading (阅读试炼)**: Articles & comprehension questions to boost HP.
+    -   **Writing (写作工坊)**: AI-powered grading (Gemini/OpenRouter) to boost ATK.
+    -   **Speaking (口语修行)**: AI Assessment & Free Talking to gain EXP.
+3.  **Battle Arena (竞技场)**:
+    -   **Word Blitz (单词闪击战)**: Fast-paced definition matching.
+    -   **Grammar Tactics (语法阵地战)**: Fill-in-the-blanks defense game.
+    -   **AI Fallback**: Auto-match with AI if no opponent is found.
 
-```bash
-# Gemini API Configuration
-# 从 https://ai.google.dev/ 获取
-GEMINI_API_KEY=your_gemini_api_key_here
+### 🛡️ Character & Social / 角色与社交
+- **RPG Stats**: Level, EXP, HP, ATK, DEF, Crit Rate.
+- **Shop & Customization**: Buy weapons/armor and customize appearance (Skin, Hair).
+- **Social**: Leaderboards (Rank & Vocab) and Achievements.
 
-# Supabase Configuration  
-# 从 https://supabase.com/dashboard 获取
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your_anon_key_here
-```
+---
 
-### 3. 设置 Supabase 数据库
+## 🛠️ Tech Stack / 技术栈
 
-1. 在 [Supabase](https://supabase.com/) 创建新项目
-2. 进入 SQL Editor
-3. 运行 `database/migration.sql` 中的 SQL 脚本
-4. 复制项目的 URL 和 anon key 到 `.env.local`
+- **Frontend**: React 19, Vite, TypeScript
+- **Game Engine**: Phaser (for battle scenes)
+- **Styling**: Vanilla CSS, Framer Motion (Animations)
+- **Backend & Database**: Supabase (PostgreSQL, Auth, Realtime)
+- **AI Services**: 
+  - Google Gemini API (`@google/genai`) - For content generation & TTS.
+  - OpenRouter API (`@openrouter/sdk`) - For writing assessment.
 
-### 4. 运行应用
+---
 
-```bash
-npm run dev
-```
+## 🏁 Getting Started /以此开始
 
-应用将在 `http://localhost:3000` 启动。
+### Prerequisites / 前置准备
+- Node.js (v18+)
+- npm or yarn
+- A Supabase project
+- API Keys for Google Gemini and OpenRouter
 
-## 功能特性
+### Installation / 安装
 
-### 🎮 学习模式
+1.  **Clone the repository / 克隆仓库**
+    ```bash
+    git clone https://github.com/your-username/word-warrior.git
+    cd word-warrior
+    ```
 
-- **词汇训练**: 卡片式单词学习,滑动记忆
-- **听力磨炼**: AI 生成听力题目,语音播放
-- **口语修行**: 实时 AI 语音对话评测
-- **阅读试炼**: 理解力测试题目
-- **写作工坊**: AI 智能评分与反馈
+2.  **Install dependencies / 安装依赖**
+    ```bash
+    npm install
+    ```
 
-### ⚔️ 对战模式
+3.  **Environment Setup / 环境配置**
+    Create a `.env.local` file in the root directory based on `.env.local.example`:
+    
+    复制 `.env.local.example` 为 `.env.local` 并填入以下配置：
 
-- **单词闪击战**: 速度竞赛,英选汉
-- **语法阵地战**: 准确率对决
-- **咏唱对决**: 实时翻译 PK
+    ```env
+    # Gemini API Configuration
+    GEMINI_API_KEY=your_gemini_api_key
 
-### 📊 数据持久化
+    # Supabase Configuration
+    SUPABASE_URL=https://your-project.supabase.co
+    SUPABASE_ANON_KEY=your_supabase_anon_key
 
-- 用户等级与经验值
-- 属性成长 (ATK/DEF/HP/CRIT)
-- 已掌握单词记录
-- 排行榜系统
-- 成就解锁
+    # OpenRouter API Configuration (Note: VITE_ prefix required)
+    VITE_OPENROUTER_API_KEY=your_openrouter_api_key
+    ```
 
-## 项目结构
+4.  **Run Development Server / 启动开发服务器**
+    ```bash
+    npm run dev
+    ```
 
-```
-Word-Warrior/
-├── components/          # React 组件
-├── services/           # API 服务层
-│   ├── geminiService.ts    # AI 服务
-│   ├── liveService.ts      # 实时语音服务  
-│   ├── supabaseClient.ts   # Supabase 客户端
-│   └── databaseService.ts  # 数据库操作
-├── database/           # 数据库迁移脚本
-├── constants.tsx       # 常量配置
-├── types.ts           # TypeScript 类型定义
-└── App.tsx            # 主应用组件
-```
+---
 
-## 数据库架构
+## 📂 Project Structure / 项目结构
 
-- `profiles`: 用户档案
-- `user_stats`: 用户属性与进度
-- `mastered_words`: 已掌握单词
-- `achievements`: 成就记录
+- **/src**
+  - **App.tsx**: Main component & routing.
+  - **components/**: UI modules (Auth, Warrior, Training modes, BattleArena).
+  - **services/**: API interactions (Database, PvP, Gemini).
+  - **contexts/**: Global state management.
+  - **constants.tsx**: Configuration & Mock data.
 
-详见 `database/migration.sql`
+---
 
-## 开发说明
+## 📄 License
 
-### 测试用户
-
-开发模式下使用固定测试用户 ID: `00000000-0000-0000-0000-000000000001`
-
-数据库迁移脚本会自动创建此测试用户。
-
-### 添加完整认证
-
-如需实现用户注册/登录功能,可集成 Supabase Auth:
-
-```typescript
-import { supabase } from './services/supabaseClient';
-
-// 注册
-await supabase.auth.signUp({ email, password });
-
-// 登录
-await supabase.auth.signInWithPassword({ email, password });
-```
-
-## License
-
-MIT
+This project is licensed under the MIT License.
