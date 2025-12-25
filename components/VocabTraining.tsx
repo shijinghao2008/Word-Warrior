@@ -59,7 +59,7 @@ const LearningCard: React.FC<LearningCardProps> = ({ word, index, total, onNext,
       initial={{ scale: 0.9, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       exit={{ scale: 0.9, opacity: 0 }}
-      className="absolute inset-0 ww-surface ww-surface--soft rounded-[26px] flex flex-col items-center justify-between p-7 cursor-pointer active:cursor-grabbing overflow-hidden touch-none"
+      className="absolute inset-0 ww-surface ww-surface--soft rounded-[26px] flex flex-col items-center justify-between p-6 cursor-pointer active:cursor-grabbing overflow-hidden touch-none"
     >
       {/* Header: Progress */}
       <div className="w-full flex justify-end items-center select-none">
@@ -69,17 +69,17 @@ const LearningCard: React.FC<LearningCardProps> = ({ word, index, total, onNext,
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center space-y-8 w-full text-center">
+      <div className="flex-1 flex flex-col items-center justify-center space-y-6 w-full text-center">
         <div>
-          <h2 className="text-5xl md:text-6xl font-mono font-black tracking-tight ww-ink mb-2 select-none">
+          <h2 className="text-4xl md:text-5xl font-mono font-black tracking-tight ww-ink mb-1 select-none">
             {word.word}
           </h2>
           {word.phonetic && (
-            <p className="text-lg ww-muted font-mono">/{word.phonetic}/</p>
+            <p className="text-base ww-muted font-mono">/{word.phonetic}/</p>
           )}
         </div>
 
-        <div className="min-h-[110px] flex flex-col justify-center">
+        <div className="min-h-[90px] flex flex-col justify-center">
           {!isRevealed ? (
             <div className="ww-muted">
               <span className="text-[10px] uppercase tracking-[0.2em] font-black">轻触显示释义</span>
@@ -152,7 +152,7 @@ const QuizCard: React.FC<QuizCardProps> = ({ question, onAnswer, questionIndex, 
         <div className="text-[10px] font-black uppercase tracking-widest ww-muted">
           {questionIndex + 1} / {totalQuestions}
         </div>
-        <h2 className="text-4xl md:text-5xl font-mono font-black text-white">
+        <h2 className="text-3xl md:text-4xl font-mono font-black text-white">
           {question.word.word}
         </h2>
       </div>
@@ -396,7 +396,7 @@ const VocabTraining: React.FC<VocabTrainingProps> = ({ onMastered }) => {
     return (
       <div className="w-full flex flex-col items-center pt-4">
         {progress && <ProgressBar current={progress.current} total={progress.total} />}
-        <div className="relative w-full max-w-sm md:max-w-md aspect-[3/4.2]">
+        <div className="relative w-full max-w-sm md:max-w-md aspect-[3/3.6]">
           <AnimatePresence mode="wait">
             <LearningCard
               key={currentWord.id}
