@@ -222,11 +222,10 @@ const VocabTraining: React.FC<VocabTrainingProps> = ({ onMastered }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [score, setScore] = useState(0);
-  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
 
   // Persistence logic
   useEffect(() => {
-    if (user?.id && user.id === loadedUserId && mode !== 'loading' && mode !== 'summary') {
+    if (user?.id && mode !== 'loading' && mode !== 'summary' && batch.length > 0) {
       const session = {
         mode,
         batch,
@@ -240,7 +239,7 @@ const VocabTraining: React.FC<VocabTrainingProps> = ({ onMastered }) => {
     if (mode === 'summary') {
       localStorage.removeItem(STORAGE_KEY);
     }
-  }, [mode, batch, currentIndex, quizQuestions, score, user?.id, loadedUserId]);
+  }, [mode, batch, currentIndex, quizQuestions, score, user?.id]);
 
   const progress = useMemo(() => {
     if (mode === 'learning') {
@@ -274,13 +273,14 @@ const VocabTraining: React.FC<VocabTrainingProps> = ({ onMastered }) => {
   // Load Batch
   useEffect(() => {
     const init = async () => {
-      if (!user) return;
+      if (!user?.id) return;
 
+      // Only initialize if we're in the loading state and haven't loaded yet
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         try {
           const session = JSON.parse(saved);
-          if (session.userId === user.id && session.batch.length > 0) {
+          if (session.userId === user.id && session.batch && session.batch.length > 0) {
             console.log('📦 Restoring saved session...');
             setBatch(session.batch);
             setQuizQuestions(session.quizQuestions);
@@ -298,7 +298,7 @@ const VocabTraining: React.FC<VocabTrainingProps> = ({ onMastered }) => {
     };
 
     init();
-  }, [user]);
+  }, [user?.id]);
 
   const loadBatch = async () => {
     if (!user) return;
