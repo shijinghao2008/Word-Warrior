@@ -56,12 +56,15 @@ interface AuthenticatedAppProps {
 const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
   const { user } = useAuth();
   const { themeMode, getColorClass, primaryColor, avatar } = useTheme(); // Use Theme Context
-  const { state: warriorState, addGold, getItemDetails, updateStats } = useWarrior();
+  const { state: warriorState, addGold, getItemDetails, updateStats, isLoaded } = useWarrior();
 
   const [kpNotification, setKpNotification] = useState<{ gain: number; promotion?: { from: string; to: string } } | null>(null);
 
   const [activeTab, setActiveTab] = useState('vocab');
   const [isArenaMenuOpen, setIsArenaMenuOpen] = useState(false);
+  const [showShop, setShowShop] = useState(false);
+  const [showCustomizer, setShowCustomizer] = useState(false);
+  const [isStatusBarHidden, setIsStatusBarHidden] = useState(false);
 
   // Watch for equipment changes to trigger KP notification
   const prevKPRef = React.useRef<number | null>(null);
@@ -70,6 +73,9 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
   const stats = warriorState.stats;
 
   useEffect(() => {
+    // 只有在数据加载完成后才计算战力变化，防止初始加载触发弹窗
+    if (!isLoaded) return;
+
     // stats already includes gear bonuses from DB
     const currentKP = calculateKP({
       atk: stats.atk,
@@ -89,7 +95,17 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
       });
     }
     prevKPRef.current = currentKP;
-  }, [warriorState.equipped, stats.level, stats.atk, stats.def, stats.maxHp]);
+  }, [isLoaded, warriorState.equipped, stats.level, stats.atk, stats.def, stats.maxHp]);
+
+  // Reset status bar visibility when changing tabs
+  useEffect(() => {
+    setIsStatusBarHidden(false);
+  }, [activeTab]);
+
+  // Global Preloader: Wait for WarriorContext to be ready
+  if (!isLoaded) {
+    return <LoadingScreen />;
+  }
 
   const handleGainExp = (exp: number, statType?: 'atk' | 'def' | 'crit' | 'hp', gold: number = 0, isMastered?: boolean, statAmount: number = 1) => {
     // 1. Immediate RPG Feedback (Local)
@@ -331,9 +347,6 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
     );
   };
 
-  const [showShop, setShowShop] = useState(false);
-  const [showCustomizer, setShowCustomizer] = useState(false);
-
   // ... (keep renderScholarPath)
 
   const renderProfile = () => (
@@ -377,13 +390,6 @@ const AuthenticatedApp: React.FC<AuthenticatedAppProps> = ({ userId }) => {
       </AnimatePresence>
     </div>
   );
-
-  const [isStatusBarHidden, setIsStatusBarHidden] = useState(false);
-
-  // Reset status bar visibility when changing tabs
-  useEffect(() => {
-    setIsStatusBarHidden(false);
-  }, [activeTab]);
 
   const renderContent = () => {
     switch (activeTab) {

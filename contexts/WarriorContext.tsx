@@ -36,6 +36,7 @@ interface WarriorContextType {
     unlockColor: (colorId: string) => Promise<boolean>;
     shopItems: ShopItem[];
     updateStats: (updates: Partial<UserStats>) => void;
+    isLoaded: boolean;
 }
 
 const WarriorContext = createContext<WarriorContextType | undefined>(undefined);
@@ -259,7 +260,7 @@ export const WarriorProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const getItemDetails = (itemId: string) => shopItems.find(i => i.id === itemId);
 
     return (
-        <WarriorContext.Provider value={{ state, addGold, buyItem, equipItem, updateAppearance, getItemDetails, unlockColor, shopItems, updateStats }}>
+        <WarriorContext.Provider value={{ state, addGold, buyItem, equipItem, updateAppearance, getItemDetails, unlockColor, shopItems, updateStats, isLoaded: loaded }}>
             {children}
         </WarriorContext.Provider>
     );

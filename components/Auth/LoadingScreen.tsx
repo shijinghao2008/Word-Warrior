@@ -15,7 +15,9 @@ const LoadingScreen: React.FC = () => {
                     <span className="text-3xl font-black ww-ink">W</span>
                 </div>
                 <Loader size={32} className="animate-spin mx-auto mb-4" style={{ color: 'var(--ww-accent)' }} />
-                <p className="text-sm font-black uppercase tracking-widest text-white/80">Loading...</p>
+                <p className="text-xs font-black uppercase tracking-[0.3em] text-white/60">
+                    正在连接修行之路...
+                </p>
             </motion.div>
         </div>
     );
