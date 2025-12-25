@@ -22,7 +22,7 @@ const DEFAULT_STATE: WarriorState = {
         eyeColor: '#000000',
         modelColor: 'blue' // Added for full body tint
     },
-    unlockedColors: ['blue'], // Default unlocked color
+    unlockedColors: ['blue', 'red', 'yellow', 'purple', 'black'], // All colors are now free and unlocked by default
     stats: INITIAL_STATS
 };
 
@@ -33,7 +33,6 @@ interface WarriorContextType {
     equipItem: (type: 'armor' | 'weapon' | 'shield', itemId: string) => void;
     updateAppearance: (updates: Partial<WarriorState['appearance']>) => void;
     getItemDetails: (itemId: string) => ShopItem | undefined;
-    unlockColor: (colorId: string) => Promise<boolean>;
     shopItems: ShopItem[];
     updateStats: (updates: Partial<UserStats>) => void;
     isLoaded: boolean;
@@ -125,7 +124,7 @@ export const WarriorProvider: React.FC<{ children: React.ReactNode }> = ({ child
             // 强制最少显示加载屏 800ms，确保平滑过渡
             const endTime = Date.now();
             const elapsed = endTime - startTime;
-            const minDuration = 800; 
+            const minDuration = 80; 
             
             if (elapsed < minDuration) {
                 await new Promise(resolve => setTimeout(resolve, minDuration - elapsed));
@@ -248,30 +247,10 @@ export const WarriorProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
     };
 
-    const unlockColor = async (colorId: string): Promise<boolean> => {
-        if (state.unlockedColors.includes(colorId)) return true;
-        const PRICE = 100;
-        if (state.gold < PRICE) return false;
-
-        if (userId) {
-            const { success, newGold } = await purchaseItem(userId, PRICE); // Use generic purchase for colors
-            if (success) {
-                setState(prev => ({
-                    ...prev,
-                    gold: newGold!,
-                    unlockedColors: [...prev.unlockedColors, colorId],
-                    stats: { ...prev.stats, gold: newGold! }
-                }));
-                return true;
-            }
-        }
-        return false;
-    };
-
     const getItemDetails = (itemId: string) => shopItems.find(i => i.id === itemId);
 
     return (
-        <WarriorContext.Provider value={{ state, addGold, buyItem, equipItem, updateAppearance, getItemDetails, unlockColor, shopItems, updateStats, isLoaded: loaded }}>
+        <WarriorContext.Provider value={{ state, addGold, buyItem, equipItem, updateAppearance, getItemDetails, shopItems, updateStats, isLoaded: loaded }}>
             {children}
         </WarriorContext.Provider>
     );

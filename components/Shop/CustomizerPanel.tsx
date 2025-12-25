@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Palette, X, Check, Lock, Coins } from 'lucide-react';
+import { Palette, X, Check, Coins } from 'lucide-react';
 import { useWarrior } from '../../contexts/WarriorContext';
 import WarriorPreview from '../Warrior/WarriorPreview';
 
@@ -17,21 +17,10 @@ const MODEL_COLORS = [
 ];
 
 const CustomizerPanel: React.FC<CustomizerPanelProps> = ({ onClose }) => {
-    const { state, updateAppearance, unlockColor } = useWarrior();
+    const { state, updateAppearance } = useWarrior();
 
-    const handleColorSelect = async (colorId: string) => {
-        if (state.unlockedColors.includes(colorId)) {
-            updateAppearance({ modelColor: colorId } as any);
-        } else {
-            // Attempt to unlock
-            if (await unlockColor(colorId)) {
-                // If successful auto-equip
-                updateAppearance({ modelColor: colorId } as any);
-            } else {
-                // Shake or show error (optional, for now simple logic)
-                alert("金币不足！需要 100 金币解锁。"); // Simple fallback, ideally a toast
-            }
-        }
+    const handleColorSelect = (colorId: string) => {
+        updateAppearance({ modelColor: colorId } as any);
     };
 
     return (
@@ -94,7 +83,6 @@ const CustomizerPanel: React.FC<CustomizerPanelProps> = ({ onClose }) => {
 
                             <div className="grid grid-cols-1 gap-3 overflow-y-auto pr-2 custom-scrollbar flex-1">
                                 {MODEL_COLORS.map(opt => {
-                                    const isUnlocked = state.unlockedColors.includes(opt.id);
                                     const isSelected = (state.appearance as any).modelColor === opt.id || (!(state.appearance as any).modelColor && opt.id === 'blue');
 
                                     return (
@@ -116,7 +104,6 @@ const CustomizerPanel: React.FC<CustomizerPanelProps> = ({ onClose }) => {
                                                     style={{ backgroundColor: opt.color }}
                                                 >
                                                     {isSelected && <Check size={14} className="text-white drop-shadow-md" strokeWidth={4} />}
-                                                    {!isUnlocked && !isSelected && <Lock size={12} className="text-white/80" />}
                                                 </div>
                                                 <div>
                                                     <span className={`text-sm font-black uppercase tracking-wide block ${isSelected ? 'ww-ink' : 'text-[color:var(--ww-muted)]'}`}>
@@ -127,13 +114,6 @@ const CustomizerPanel: React.FC<CustomizerPanelProps> = ({ onClose }) => {
 
                                             {isSelected && (
                                                 <div className="w-2 h-2 rounded-full bg-[color:var(--ww-brand)]"></div>
-                                            )}
-
-                                            {!isUnlocked && (
-                                                <div className="flex items-center gap-1 px-2 py-1 rounded bg-black/5 border border-black/10">
-                                                    <Coins size={12} className="text-amber-600" />
-                                                    <span className="text-xs font-bold text-amber-700">100</span>
-                                                </div>
                                             )}
                                         </button>
                                     );
